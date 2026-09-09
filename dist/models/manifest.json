@@ -1,0 +1,49 @@
+{
+  "format": "glTF 2.0",
+  "units": "meters (illustrative, not measured)",
+  "rackCount": 6,
+  "packsPerRack": 7,
+  "packCount": 42,
+  "longFaceDoors": 6,
+  "serviceDoors": 2,
+  "switchPorts": 27,
+  "eBSCLanPorts": 4,
+  "nodes": 1260,
+  "uniqueGeometries": 2,
+  "materials": 12,
+  "facpParent": "Front_Left_Hinge",
+  "doors": [
+    {
+      "name": "Door_Hinge_01",
+      "openDegrees": -105
+    },
+    {
+      "name": "Door_Hinge_02",
+      "openDegrees": -105
+    },
+    {
+      "name": "Door_Hinge_03",
+      "openDegrees": -105
+    },
+    {
+      "name": "Door_Hinge_04",
+      "openDegrees": -105
+    },
+    {
+      "name": "Door_Hinge_05",
+      "openDegrees": -105
+    },
+    {
+      "name": "Door_Hinge_06",
+      "openDegrees": -105
+    },
+    {
+      "name": "Front_Left_Hinge",
+      "openDegrees": 100
+    },
+    {
+      "name": "Front_Right_Hinge",
+      "openDegrees": -100
+    }
+  ]
+}

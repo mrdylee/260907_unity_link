@@ -5,6 +5,9 @@ export interface RackTelemetry {
   temperatureC: number;
   voltageV: number;
   socPercent: number;
+  sohPercent: number;
+  currentA: number;
+  state: 'CHARGING' | 'IDLE';
   status: RackStatus;
   diagnosticCode: 'NORMAL' | 'OVER_TEMPERATURE';
   diagnosticMessage: string;
@@ -19,6 +22,7 @@ export interface EquipmentTelemetry {
   id: 'LCS' | 'eBSC';
   communication: 'ONLINE' | 'OFFLINE';
   mode: string;
+  dsState?: 'OPEN' | 'CLOSED';
   diagnosticCode: 'NORMAL';
   diagnosticMessage: string;
 }
@@ -49,6 +53,9 @@ export class SampleTelemetryProvider implements TelemetryProvider {
       temperatureC,
       voltageV,
       socPercent,
+      sohPercent: 98 - index * 0.3,
+      currentA: index === 3 ? 0 : 24.5 + index,
+      state: index === 3 ? 'IDLE' : 'CHARGING',
       status: telemetryStatus(temperatureC),
       diagnosticCode: temperatureC >= 35 ? 'OVER_TEMPERATURE' : 'NORMAL',
       diagnosticMessage: temperatureC >= 35 ? '랙 내부 온도 상한 초과' : '진단 이상 없음',
@@ -57,7 +64,7 @@ export class SampleTelemetryProvider implements TelemetryProvider {
 
   async readEquipment(): Promise<EquipmentTelemetry[]> {
     return [
-      { id: 'LCS', communication: 'ONLINE', mode: 'AUTO', diagnosticCode: 'NORMAL', diagnosticMessage: '랙 데이터 수집 정상' },
+      { id: 'LCS', communication: 'ONLINE', mode: 'AUTO', dsState: 'CLOSED', diagnosticCode: 'NORMAL', diagnosticMessage: '랙 데이터 수집 정상' },
       { id: 'eBSC', communication: 'ONLINE', mode: 'MONITORING', diagnosticCode: 'NORMAL', diagnosticMessage: 'LAN 4채널 통신 정상' },
     ];
   }

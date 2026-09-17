@@ -15,6 +15,8 @@ Blender v2의 도장·철물·고무 표면을 웹 뷰어에 반영했습니다.
 
 이 저장소의 TypeScript가 카메라와 문을 제어하며, 3D 형상·재질은 GLB 파일로 로드합니다. ZIP에도 최신 웹 모델과 실행 빌드를 포함했습니다. Unity의 기존 SampleScene은 보존되어 있습니다.
 
+오른쪽 **ESS 진단 정보** 패널은 Modbus TCP 화면 개발을 위한 모의 데이터 예제입니다. 여섯 랙의 온도·전압·SOC·진단 코드와 LCS/eBSC 통신·운전 상태를 표시하며, RACK 04에는 고온 경고 예제가 들어 있습니다. 3D 화면의 RACK 01~06, LCS, eBSC 라벨이나 진단 카드를 선택하면 해당 대상을 확인할 수 있습니다. `SIMULATION`과 `장비 미연결` 표시는 실제 계측값이 아님을 뜻합니다. 실제 연동 시 `src/telemetry.ts`의 데이터 공급자를 WebSocket 공급자로 교체하면 됩니다.
+
 ## ZIP 다운로드부터 실행까지
 
 1. [ESS-TypeScript-Portable.zip 다운로드](https://github.com/mrdylee/260907_unity_link/raw/refs/heads/main/downloads/ESS-TypeScript-Portable.zip)를 누릅니다.
@@ -70,6 +72,7 @@ HTML 파일을 직접 더블클릭하지 말고 서버를 통해 접속하세요
 - 문 클릭: 해당 문 열기·닫기. 드래그 후에는 문 클릭으로 처리하지 않습니다.
 - 전체 열기·닫기: 긴 면 도어 6개와 짧은 면 장비실 도어 2개를 함께 조작
 - 전체 보기 → 배터리 랙 → 내부 패널 → eBSC 순으로 발표
+- 오른쪽 랙 카드: 온도·전압·SOC·진단 정보 확인 및 해당 랙으로 카메라 이동
 - 전체화면: 오른쪽 버튼. 종료는 Esc
 - 터치: 한 손가락 회전, 두 손가락 확대·이동
 

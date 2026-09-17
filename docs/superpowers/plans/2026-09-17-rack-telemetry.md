@@ -41,4 +41,4 @@
 - [x] Run telemetry unit tests, existing 3D model tests, and the production build.
 - [x] Reload the visible browser and verify all six temperatures and selection behavior.
 - [x] Update the portable ZIP and README with the sample/live-data boundary.
-- [ ] Commit and push the verified update to the existing repository.
+- [x] Commit and push the verified update to the existing repository.

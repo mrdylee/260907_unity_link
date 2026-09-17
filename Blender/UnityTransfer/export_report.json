@@ -1,0 +1,47 @@
+{
+  "source": "/Users/james_black/work/project/ess_unity_project/Blender/ESS_Realistic_Materials_v2/ESS_Realistic_Materials_v2.blend",
+  "original_open_file": "/Users/james_black/work/project/ess_unity_project/Blender/ESS_Realistic_Materials_v2/ESS_Realistic_Materials_v2.blend",
+  "original_unsaved_preserved": true,
+  "objects": 1260,
+  "meshes": 1068,
+  "baked_roles": [
+    {
+      "role": "Frame_Silver",
+      "normal": "/Users/james_black/work/project/ess_unity_project/Assets/ESS_Blender_v2/Textures/Frame_Silver_Normal.png",
+      "mask": "/Users/james_black/work/project/ess_unity_project/Assets/ESS_Blender_v2/Textures/Frame_Silver_MetallicSmoothness.png",
+      "smoothness_range": [
+        0.6909910440444946,
+        0.74004727602005
+      ]
+    },
+    {
+      "role": "Gasket_Charcoal",
+      "normal": "/Users/james_black/work/project/ess_unity_project/Assets/ESS_Blender_v2/Textures/Gasket_Charcoal_Normal.png",
+      "mask": "/Users/james_black/work/project/ess_unity_project/Assets/ESS_Blender_v2/Textures/Gasket_Charcoal_MetallicSmoothness.png",
+      "smoothness_range": [
+        0.2179880142211914,
+        0.2833963632583618
+      ]
+    },
+    {
+      "role": "Enclosure_OffWhite",
+      "normal": "/Users/james_black/work/project/ess_unity_project/Assets/ESS_Blender_v2/Textures/Enclosure_OffWhite_Normal.png",
+      "mask": "/Users/james_black/work/project/ess_unity_project/Assets/ESS_Blender_v2/Textures/Enclosure_OffWhite_MetallicSmoothness.png",
+      "smoothness_range": [
+        0.6479880213737488,
+        0.7133963704109192
+      ]
+    },
+    {
+      "role": "Hardware_Steel",
+      "normal": "/Users/james_black/work/project/ess_unity_project/Assets/ESS_Blender_v2/Textures/Hardware_Steel_Normal.png",
+      "mask": "/Users/james_black/work/project/ess_unity_project/Assets/ESS_Blender_v2/Textures/Hardware_Steel_MetallicSmoothness.png",
+      "smoothness_range": [
+        0.7533233165740967,
+        0.8078303337097168
+      ]
+    }
+  ],
+  "device": "CPU, 2 threads; no realtime viewport rendering",
+  "export": "model.json -> Unity Mesh assets / prefab"
+}

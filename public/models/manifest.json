@@ -9,33 +9,33 @@
   "switchPorts": 27,
   "eBSCLanPorts": 4,
   "nodes": 1260,
-  "uniqueGeometries": 2,
-  "materials": 12,
+  "uniqueGeometries": 1071,
+  "materials": 13,
   "facpParent": "Front_Left_Hinge",
   "doors": [
     {
       "name": "Door_Hinge_01",
-      "openDegrees": -105
+      "openDegrees": 105
     },
     {
       "name": "Door_Hinge_02",
-      "openDegrees": -105
+      "openDegrees": 105
     },
     {
       "name": "Door_Hinge_03",
-      "openDegrees": -105
+      "openDegrees": 105
     },
     {
       "name": "Door_Hinge_04",
-      "openDegrees": -105
+      "openDegrees": 105
     },
     {
       "name": "Door_Hinge_05",
-      "openDegrees": -105
+      "openDegrees": 105
     },
     {
       "name": "Door_Hinge_06",
-      "openDegrees": -105
+      "openDegrees": 105
     },
     {
       "name": "Front_Left_Hinge",
@@ -45,5 +45,7 @@
       "name": "Front_Right_Hinge",
       "openDegrees": -100
     }
-  ]
+  ],
+  "modelVersion": "Blender realistic materials v2",
+  "embeddedTextures": 8
 }

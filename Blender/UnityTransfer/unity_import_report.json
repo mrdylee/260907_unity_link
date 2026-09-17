@@ -1,0 +1,13 @@
+{
+  "scene": "Assets/ESS_Blender_v2/ESS_Blender_v2_Demo.unity",
+  "prefab": "Assets/ESS_Blender_v2/ESS_Blender_v2.prefab",
+  "nodes": 1260,
+  "meshes": 1068,
+  "baked_textures": 8,
+  "model_materials": 13,
+  "playmode_tests": "passed: side hinge angles, all closed, click ray, FACP follows door",
+  "final_playing": false,
+  "final_scene_dirty": false,
+  "original_scene_unchanged": true,
+  "saved_blender_source_unchanged": true
+}

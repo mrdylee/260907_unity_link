@@ -3,6 +3,18 @@
 사진을 참고해 Unity에서 만든 ESS 3D 목업을 Three.js로 옮긴 발표용 예제입니다.
 실측 CAD, 전기 회로 시뮬레이터 또는 실제 장비 제어 프로그램이 아닙니다.
 
+## 최신 개선본 (2026-09-17)
+
+Blender v2의 도장·철물·고무 표면을 웹 뷰어에 반영했습니다. GLB에는 13개 PBR 재질과 8개 Normal/Metallic-Roughness 텍스처가 포함됩니다. 웹, Unity URP, Blender Cycles는 조명과 반사 계산이 달라 픽셀 단위로 동일하지 않습니다.
+
+- 최신 Unity 씬: `UnityProject/Assets/ESS_Blender_v2/ESS_Blender_v2_Demo.unity`
+- 재사용 프리팹: `UnityProject/Assets/ESS_Blender_v2/ESS_Blender_v2.prefab`
+- Blender 원본: `Blender/ESS_Realistic_Materials_v2/ESS_Realistic_Materials_v2.blend`
+- 웹 모델: `public/models/ess-container.glb`
+- 재생성: Pillow가 설치된 Python으로 `python scripts/export-v2.py` 실행 후 `npm run build`
+
+이 저장소의 TypeScript가 카메라와 문을 제어하며, 3D 형상·재질은 GLB 파일로 로드합니다. ZIP에도 최신 웹 모델과 실행 빌드를 포함했습니다. Unity의 기존 SampleScene은 보존되어 있습니다.
+
 ## ZIP 다운로드부터 실행까지
 
 1. [ESS-TypeScript-Portable.zip 다운로드](https://github.com/mrdylee/260907_unity_link/raw/refs/heads/main/downloads/ESS-TypeScript-Portable.zip)를 누릅니다.
@@ -34,7 +46,7 @@ node server.ts
 - `tests/`: 웹 모델의 문 동작·팩 수 검증 코드
 
 Unity 원본은 Unity Hub에서 **Add / 디스크에서 프로젝트 추가**로 `UnityProject` 폴더를 선택하세요.
-작업 버전은 Unity **6000.6.0f1**이며, 기본 장면은 `Assets/Scenes/SampleScene.unity`입니다.
+작업 버전은 Unity **6000.6.0f1**이며, 최신 장면은 `Assets/ESS_Blender_v2/ESS_Blender_v2_Demo.unity`입니다.
 캐시와 사용자 설정은 포함하지 않았으므로 첫 실행 때 패키지 다운로드와 재임포트 시간이 필요합니다.
 이전 상태는 `Assets/Scenes/Before_*.unity`에 백업했습니다.
 
@@ -97,7 +109,7 @@ ess.toggleObject(intersection.object);
 ```
 
 회전·확대 카메라는 `OrbitControls`이며 사용 예시는 `src/main.ts`에 있습니다.
-GLB에는 형상·재질·계층을 넣었고 문 애니메이션 동작은 `ESSModel.ts`가 담당합니다.
+GLB에는 형상·재질·텍스처·계층을 넣었고 문 애니메이션 동작은 `ESSModel.ts`가 담당합니다.
 GLB만 다른 뷰어에 열면 문은 닫힌 정적 모델입니다.
 Unity의 좌수 좌표계를 glTF 우수 좌표계로 변환했으므로 문 회전 부호는 Unity와 다릅니다.
 `public/models/manifest.json`에 문 이름·열림각·모델 구성을 기록했습니다.

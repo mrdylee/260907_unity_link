@@ -1,0 +1,17 @@
+{
+  "model_objects": 1260,
+  "mcp_edited_and_rendered": true,
+  "source_file_preserved": "/Users/james_black/work/project/ess_unity_project/Blender/ESS_Surface_Study/ESS_Surface_Study.blend",
+  "added_weathering": false,
+  "roughness": "paint .26-.38; frame .24-.33; hardware .17-.27; rubber .69-.81",
+  "note": "coating and roughness estimates; exact LINK material specification unverified",
+  "structure_unchanged": true,
+  "geometry_transform_sha256": "198e2cb000e14e2e037c0c07794cc48c2346500b043a7bcf5581c8ca517df0a8",
+  "source_sha256": "5c05393a93228f7dd1c0d2331c7d4b5b988d17f7b8f42f30ba8071065db920b6",
+  "reopened_final_file": "/Users/james_black/work/project/ess_unity_project/Blender/ESS_Realistic_Materials_v2/ESS_Realistic_Materials_v2.blend",
+  "paint_grain": {
+    "scale_per_m": 700,
+    "bump_distance_m": 0.0003,
+    "strength": 0.5
+  }
+}

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 /** Exported glTF uses right-handed coordinates; angle signs differ from Unity. */
-const DOORS = [...Array.from({ length: 6 }, (_, i) => ({ name: `Door_Hinge_${String(i + 1).padStart(2, '0')}`, angle: -105 })),
+const DOORS = [...Array.from({ length: 6 }, (_, i) => ({ name: `Door_Hinge_${String(i + 1).padStart(2, '0')}`, angle: 105 })),
   { name: 'Front_Left_Hinge', angle: 100 }, { name: 'Front_Right_Hinge', angle: -100 }];
 
 export class ESSModel {

@@ -1,9 +1,10 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ESSModel } from './ESSModel';
 import './style.css';
 
-document.querySelector('#app')!.innerHTML = `<main><header><div><span class="eyebrow">ENERGY STORAGE SYSTEM</span><h1>ESS 컨테이너</h1><p>사진 기반 인터랙티브 3D 목업</p></div><span class="badge">6 RACKS · 42 PACKS</span></header><section id="viewport"><canvas></canvas><div id="loading">모델 불러오는 중…</div><div class="view-tools"><button id="zoom-in" aria-label="확대">＋</button><button id="zoom-out" aria-label="축소">−</button><button id="fullscreen" aria-label="전체화면">⛶</button></div><div class="hint">드래그 회전 · 휠 확대 · 우클릭 이동 · 문 클릭</div></section><footer><div class="group"><button id="open">전체 열기</button><button id="close">전체 닫기</button></div><div class="group"><button id="home">전체 보기</button><button id="racks">배터리 랙</button><button id="panel">내부 패널</button><button id="ebsc">eBSC</button></div><span id="status" role="status">준비 중</span></footer></main>`;
+document.querySelector('#app')!.innerHTML = `<main><header><div><span class="eyebrow">ENERGY STORAGE SYSTEM</span><h1>ESS 컨테이너</h1><p>Blender v2 재질 · 인터랙티브 3D 목업</p></div><span class="badge">6 RACKS · 42 PACKS</span></header><section id="viewport"><canvas></canvas><div id="loading">모델 불러오는 중…</div><div class="view-tools"><button id="zoom-in" aria-label="확대">＋</button><button id="zoom-out" aria-label="축소">−</button><button id="fullscreen" aria-label="전체화면">⛶</button></div><div class="hint">드래그 회전 · 휠 확대 · 우클릭 이동 · 문 클릭</div></section><footer><div class="group"><button id="open">전체 열기</button><button id="close">전체 닫기</button></div><div class="group"><button id="home">전체 보기</button><button id="racks">배터리 랙</button><button id="panel">내부 패널</button><button id="ebsc">eBSC</button></div><span id="status" role="status">준비 중</span></footer></main>`;
 const canvas = document.querySelector('canvas')!;
 const viewport = document.querySelector<HTMLElement>('#viewport')!;
 const status = document.querySelector<HTMLElement>('#status')!;
@@ -13,6 +14,10 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.25;
 const scene = new THREE.Scene(); scene.background = new THREE.Color('#18232e');
+const environment = new RoomEnvironment();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(environment).texture;
+environment.dispose(); pmrem.dispose();
 scene.add(new THREE.HemisphereLight(0xe8f4ff, 0x657075, 2.6));
 for (const [x,y,z,power] of [[-5,8,6,3.2],[5,3,-5,1.8],[-6,3,-1,2]]) {const light = new THREE.DirectionalLight(0xffffff,power);light.position.set(x,y,z);scene.add(light);}
 const camera = new THREE.PerspectiveCamera(40, 1, .01, 100);

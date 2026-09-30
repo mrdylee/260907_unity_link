@@ -1,5 +1,11 @@
 # ESS 컨테이너 — TypeScript 포터블 뷰어
 
+## 처음 보는 AI·개발자는 여기부터
+
+**[AI_START_HERE.md — 받기 → 실행 → 구조 파악 → 작업 이어가기](AI_START_HERE.md)**
+
+AI 도구용 진입점은 [AGENTS.md](AGENTS.md)입니다. 현재 구현과 미완료 항목을 구분해 안내합니다.
+
 **화면 구성과 재사용 기준:** [ESS 3D 웹 뷰어 구현 가이드](VIEWER_GUIDELINES.md)
 
 **다른 시스템에 이식할 때 먼저 읽기:** [데이터·선택 이벤트·모델 인터페이스 안내](INTEGRATION.md)

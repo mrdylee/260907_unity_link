@@ -66,6 +66,7 @@ export async function setupDiagnostics(): Promise<void> {
   popup.addEventListener('pointerleave', scheduleHide);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') dismiss(); });
   document.querySelector('#home')!.addEventListener('click', dismiss);
+  document.addEventListener('containerchange', dismiss);
   toggle.addEventListener('click', () => { panel.hidden = !panel.hidden; toggle.setAttribute('aria-expanded', String(!panel.hidden)); toggle.classList.toggle('selected', !panel.hidden); position(); });
   const observer = new MutationObserver(position);
   observer.observe(document.querySelector('#rack-markers')!, { subtree: true, attributes: true, attributeFilter: ['style'] });

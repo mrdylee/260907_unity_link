@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 /** Exported glTF uses right-handed coordinates; angle signs differ from Unity. */
-const DOORS = [...Array.from({ length: 6 }, (_, i) => ({ name: `Door_Hinge_${String(i + 1).padStart(2, '0')}`, angle: 105 })),
+const DOORS = [...Array.from({ length: 6 }, (_, i) => ({ name: `Door_Hinge_${String(i + 1).padStart(2, '0')}`, angle: i % 2 ? 105 : -105 })),
   { name: 'Front_Left_Hinge', angle: 100 }, { name: 'Front_Right_Hinge', angle: -100 }];
 
 export class ESSModel {
@@ -21,6 +21,7 @@ export class ESSModel {
     const { scene } = await new GLTFLoader().loadAsync(url);
     return new ESSModel(scene);
   }
+  clone(): ESSModel { return new ESSModel(this.root.clone(true)); }
   setDoor(name: string, open: boolean): void {
     const door = this.doors.find(d => d.node.name === name);
     if (!door) throw new Error(`Unknown door: ${name}`);
@@ -30,7 +31,15 @@ export class ESSModel {
   toggleObject(object: THREE.Object3D): string | null {
     for (let current: THREE.Object3D | null = object; current; current = current.parent) {
       const door = this.doors.find(d => d.node === current);
-      if (door) { this.setDoor(door.node.name, door.target.angleTo(this.closed) < .01); return door.node.name; }
+      if (door) {
+        const open = door.target.angleTo(this.closed) < .01;
+        this.setDoor(door.node.name, open);
+        if (door.node.name.startsWith('Door_Hinge_')) {
+          const index = Number(door.node.name.slice(-2));
+          this.setDoor(`Door_Hinge_${String(index % 2 ? index + 1 : index - 1).padStart(2, '0')}`, open);
+        }
+        return door.node.name;
+      }
     }
     return null;
   }

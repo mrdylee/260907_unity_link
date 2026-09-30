@@ -15,7 +15,7 @@
   "doors": [
     {
       "name": "Door_Hinge_01",
-      "openDegrees": 105
+      "openDegrees": -105
     },
     {
       "name": "Door_Hinge_02",
@@ -23,7 +23,7 @@
     },
     {
       "name": "Door_Hinge_03",
-      "openDegrees": 105
+      "openDegrees": -105
     },
     {
       "name": "Door_Hinge_04",
@@ -31,7 +31,7 @@
     },
     {
       "name": "Door_Hinge_05",
-      "openDegrees": 105
+      "openDegrees": -105
     },
     {
       "name": "Door_Hinge_06",
@@ -46,6 +46,6 @@
       "openDegrees": -100
     }
   ],
-  "modelVersion": "Blender realistic materials v2",
+  "modelVersion": "Blender paired doors / six-container viewer",
   "embeddedTextures": 8
 }

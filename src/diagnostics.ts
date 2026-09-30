@@ -49,6 +49,7 @@ export async function setupDiagnostics(): Promise<void> {
     if (!rack && !item) return;
     active = document.querySelector<HTMLElement>(rack ? `.rack-marker[data-rack="${rack.rackId}"]` : `.equipment-marker[data-equipment="${item!.id}"]`) ?? target;
     pinned = pin;
+    if (pin && rack) document.dispatchEvent(new CustomEvent('rackfocus', { detail: rack.rackId }));
     popup.classList.toggle('warning', rack?.status === 'warning');
     popup.innerHTML = `<div class="popover-heading"><div><span class="eyebrow">LIVE DIAGNOSTICS</span><h2>${rack ? formatRackLabel(rack.rackId) : item!.id}<span class="health">${rack?.status === 'warning' ? '고온 경고' : '정상'}</span></h2></div><button class="dismiss" aria-label="진단 말풍선 닫기">×</button></div><p class="connection">SIMULATION · 장비 미연결 · 예시 데이터</p>${rack ? rackDetails(rack) : equipmentDetails(item!)}<div class="popover-footer">${pin ? '고정됨 · 다른 장치를 클릭하면 전환' : '클릭하면 정보 고정'}</div>`;
     popup.querySelector('.dismiss')!.addEventListener('click', dismiss);

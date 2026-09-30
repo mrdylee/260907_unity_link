@@ -48,6 +48,21 @@ function selectContainer(index:number):void {
 }
 document.querySelector('#container-select')!.addEventListener('change',event=>selectContainer(Number((event.target as HTMLSelectElement).value)));
 void setupDiagnostics();
+document.addEventListener('rackfocus', event => {
+ const rackId=(event as CustomEvent<number>).detail;
+ const rack=model?.root.getObjectByName('Internal_Battery_Racks')?.children[rackId-1];
+ if(!model||!rack)return;
+ showSelectedMarkers();
+ const first=rackId%2?rackId:rackId-1;
+ for(const id of [first,first+1])model.setDoor(`Door_Hinge_${String(id).padStart(2,'0')}`,true);
+ const box=new THREE.Box3().setFromObject(rack);
+ const target=box.getCenter(new THREE.Vector3());
+ const size=box.getSize(new THREE.Vector3());
+ const distance=Math.max(size.y,size.x/camera.aspect)/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.55;
+ camera.position.copy(target).add(new THREE.Vector3(0,.15,distance));
+ controls.target.copy(target);controls.update();
+ status.textContent=`ESS ${models.indexOf(model)+1} · ${formatRackLabel(rackId)} 확대 · 배터리 랙 버튼으로 복귀`;
+});
 const raycaster = new THREE.Raycaster(); let down = new THREE.Vector2();
 canvas.addEventListener('pointerdown', event => {down.set(event.clientX,event.clientY);});
 canvas.addEventListener('pointerup', event => {

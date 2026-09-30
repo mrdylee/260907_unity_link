@@ -68,7 +68,7 @@ canvas.addEventListener('pointerdown', event => {down.set(event.clientX,event.cl
 canvas.addEventListener('pointerup', event => {
  if (event.button !== 0 || !model || down.distanceTo(new THREE.Vector2(event.clientX,event.clientY))>5) return;
  const rect=canvas.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1),camera);
- const hit=raycaster.intersectObjects(models.filter(item=>item.root.visible).map(item=>item.root),true)[0]; if(hit){ const owner=models.find(item=>{let node:THREE.Object3D|null=hit.object;while(node){if(node===item.root)return true;node=node.parent;}return false;}); const name=owner?.toggleObject(hit.object);if(name)status.textContent=`ESS ${models.indexOf(owner!)+1} · ${name.startsWith('Door_Hinge')?'랙 양문 조작':'장비실 문 조작'}`;}
+ const hit=raycaster.intersectObjects(models.filter(item=>item.root.visible).map(item=>item.root),true)[0]; if(hit){ const owner=models.find(item=>{let node:THREE.Object3D|null=hit.object;while(node){if(node===item.root)return true;node=node.parent;}return false;}); if(owner && document.querySelector<HTMLElement>('#container-markers')!.style.display!=='none'){selectContainer(models.indexOf(owner));return;} const name=owner?.toggleObject(hit.object);if(name)status.textContent=`ESS ${models.indexOf(owner!)+1} · ${name.startsWith('Door_Hinge')?'랙 양문 조작':'장비실 문 조작'}`;}
 });
 function on(id:string, action:()=>void):void{document.getElementById(id)!.addEventListener('click',action);}
 on('open',()=>{models.forEach(item=>item.setAll(true));status.textContent='컨테이너 6대 모든 문 열기';});

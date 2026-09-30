@@ -2,8 +2,8 @@ import { formatRackLabel, SampleTelemetryProvider, type RackTelemetry, type Equi
 
 export async function setupDiagnostics(): Promise<void> {
   const provider = new SampleTelemetryProvider();
-  const racks = await provider.read();
-  const equipment = await provider.readEquipment();
+  let racks = await provider.read();
+  let equipment = await provider.readEquipment();
   const viewport = document.querySelector<HTMLElement>('#viewport')!;
   const panel = document.querySelector<HTMLElement>('#telemetry')!;
   panel.hidden = true;
@@ -25,8 +25,11 @@ export async function setupDiagnostics(): Promise<void> {
   function equipmentDetails(item: EquipmentTelemetry): string {
     return `<div class="metric-grid"><span>통신<strong class="state-value">${item.communication}</strong></span><span>STATE<strong class="state-value">${item.mode}</strong></span>${item.dsState ? `<span>DS 상태<strong>${item.dsState === 'CLOSED' ? 'CLOSE' : 'OPEN'}</strong></span>` : '<span>LAN<strong>4 <small>PORTS</small></strong></span>'}</div><div class="diagnostic"><code>${item.diagnosticCode}</code>${item.diagnosticMessage}</div>`;
   }
+  function renderCards(): void {
   document.querySelector('#rack-cards')!.innerHTML = racks.map(rack => `<button class="rack-card ${rack.status}" data-rack="${rack.rackId}"><span class="rack-title"><b>${formatRackLabel(rack.rackId)}</b><i>${rack.status === 'warning' ? '고온 경고' : '정상'}</i></span>${rackDetails(rack)}</button>`).join('');
   document.querySelector('#equipment-cards')!.innerHTML = equipment.map(item => `<button class="equipment-card" data-equipment="${item.id}"><b>${item.id}</b>${equipmentDetails(item)}</button>`).join('');
+  }
+  renderCards();
   function dismiss(): void {
     clearTimeout(timer); popup.hidden = true; active = undefined; pinned = false;
     document.querySelectorAll('.rack-marker.selected').forEach(item => item.classList.remove('selected'));
@@ -67,7 +70,19 @@ export async function setupDiagnostics(): Promise<void> {
   popup.addEventListener('pointerleave', scheduleHide);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') dismiss(); });
   document.querySelector('#home')!.addEventListener('click', dismiss);
-  document.addEventListener('containerchange', dismiss);
+  let selectionVersion = 0;
+  document.addEventListener('containerchange', async () => {
+    dismiss();
+    const version = ++selectionVersion;
+    const containerId = Number(document.querySelector<HTMLSelectElement>('#container-select')!.value) + 1;
+    panel.hidden = false; toggle.setAttribute('aria-expanded', 'true'); toggle.classList.add('selected');
+    document.querySelector('#rack-cards')!.textContent = '데이터 불러오는 중…';
+    document.querySelector('#equipment-cards')!.replaceChildren();
+    const [nextRacks, nextEquipment] = await Promise.all([provider.read(containerId), provider.readEquipment(containerId)]);
+    if (version !== selectionVersion) return;
+    racks = nextRacks; equipment = nextEquipment;
+    renderCards(); markWarnings();
+  });
   toggle.addEventListener('click', () => { panel.hidden = !panel.hidden; toggle.setAttribute('aria-expanded', String(!panel.hidden)); toggle.classList.toggle('selected', !panel.hidden); position(); });
   const observer = new MutationObserver(position);
   observer.observe(document.querySelector('#rack-markers')!, { subtree: true, attributes: true, attributeFilter: ['style'] });

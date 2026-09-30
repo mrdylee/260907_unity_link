@@ -15,7 +15,7 @@ export interface RackTelemetry {
 
 export interface TelemetryProvider {
   readonly source: 'simulation' | 'modbus';
-  read(): Promise<RackTelemetry[]>;
+  read(containerId?: number): Promise<RackTelemetry[]>;
 }
 
 export interface EquipmentTelemetry {
@@ -47,25 +47,25 @@ const sampleValues = [
 export class SampleTelemetryProvider implements TelemetryProvider {
   readonly source = 'simulation' as const;
 
-  async read(): Promise<RackTelemetry[]> {
+  async read(containerId = 1): Promise<RackTelemetry[]> {
     return sampleValues.map(([temperatureC, voltageV, socPercent], index) => ({
       rackId: index + 1,
-      temperatureC,
-      voltageV,
-      socPercent,
-      sohPercent: 98 - index * 0.3,
-      currentA: index === 3 ? 0 : 24.5 + index,
+      temperatureC: temperatureC + (containerId - 1) * .4,
+      voltageV: voltageV - (containerId - 1) * 1.2,
+      socPercent: socPercent - (containerId - 1) * 3,
+      sohPercent: 98 - index * 0.3 - (containerId - 1) * .2,
+      currentA: index === 3 ? 0 : 24.5 + index + (containerId - 1) * 2,
       state: index === 3 ? 'IDLE' : 'CHARGING',
-      status: telemetryStatus(temperatureC),
-      diagnosticCode: temperatureC >= 35 ? 'OVER_TEMPERATURE' : 'NORMAL',
-      diagnosticMessage: temperatureC >= 35 ? '랙 내부 온도 상한 초과' : '진단 이상 없음',
+      status: telemetryStatus(temperatureC + (containerId - 1) * .4),
+      diagnosticCode: temperatureC + (containerId - 1) * .4 >= 35 ? 'OVER_TEMPERATURE' : 'NORMAL',
+      diagnosticMessage: temperatureC + (containerId - 1) * .4 >= 35 ? '랙 내부 온도 상한 초과' : '진단 이상 없음',
     }));
   }
 
-  async readEquipment(): Promise<EquipmentTelemetry[]> {
+  async readEquipment(containerId = 1): Promise<EquipmentTelemetry[]> {
     return [
-      { id: 'LCS', communication: 'ONLINE', mode: 'AUTO', dsState: 'CLOSED', diagnosticCode: 'NORMAL', diagnosticMessage: '랙 데이터 수집 정상' },
-      { id: 'eBSC', communication: 'ONLINE', mode: 'MONITORING', diagnosticCode: 'NORMAL', diagnosticMessage: 'LAN 4채널 통신 정상' },
+      { id: 'LCS', communication: 'ONLINE', mode: 'AUTO', dsState: 'CLOSED', diagnosticCode: 'NORMAL', diagnosticMessage: `ESS ${String(containerId).padStart(2, '0')} · 랙 데이터 수집 정상` },
+      { id: 'eBSC', communication: 'ONLINE', mode: 'MONITORING', diagnosticCode: 'NORMAL', diagnosticMessage: `ESS ${String(containerId).padStart(2, '0')} · LAN 4채널 통신 정상` },
     ];
   }
 }

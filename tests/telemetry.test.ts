@@ -4,6 +4,11 @@ import { formatRackLabel, SampleTelemetryProvider, telemetryStatus } from '../sr
 const provider = new SampleTelemetryProvider();
 const snapshot = await provider.read();
 const equipment = await provider.readEquipment();
+const secondContainer = await provider.read(2);
+assert.notDeepEqual(secondContainer, snapshot);
+assert.deepEqual(await provider.read(1), snapshot);
+assert.equal(secondContainer[0].socPercent, 79);
+assert.ok((await provider.readEquipment(2)).every(item => item.diagnosticMessage.includes('ESS 02')));
 
 assert.equal(provider.source, 'simulation');
 assert.equal(snapshot.length, 6);

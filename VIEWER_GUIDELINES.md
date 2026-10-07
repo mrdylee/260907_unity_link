@@ -99,3 +99,5 @@
 분홍색 RBMS 케이블 6가닥은 Extended Switch의 LAN 포트에 연결됩니다. 확장 스위치 분리 후 케이블의 부모 그룹과 끝점을 함께 수정했습니다. 포트 끝점 및 구간 사이 연속성을 모델 테스트로 검사합니다.
 
 재생성 순서: 배치 변경 전 GLB와 ESS_Paired_Doors.blend에서 panel-layout.py → 생성된 ESS_Panel_Layout.blend에서 panel-center.py → ESS_Panel_Center.blend에서 panel-network-cables.py → ESS_Panel_Network.blend에서 fix-expansion-cables.py를 실행합니다. 각 단계는 직전 단계의 웹 GLB를 입력으로 사용하며, 마지막 두 스크립트는 중복 실행을 차단합니다.
+
+LCS 뒷면은 오른쪽 흰 측면 패널 안쪽 면에 밀착합니다. 재생성 마지막 단계에 `mount-lcs-to-wall.py`를 실행하며, 벽과 하우징 면의 간격은 자동 테스트로 확인합니다.

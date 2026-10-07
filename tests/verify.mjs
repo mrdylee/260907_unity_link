@@ -9,6 +9,44 @@ globalThis.createImageBitmap = async blob => { const img = await loadImage(Buffe
 globalThis.ProgressEvent = class { constructor(type, values) { this.type=type;Object.assign(this,values); } };
 const model=await ESSModel.load(`${process.env.ESS_TEST_URL || 'http://127.0.0.1:3006'}/models/ess-container.glb`);
 const root=model.root;
+root.updateMatrixWorld(true);
+const leftDevices=['Extended_Switch','Network_Switch_IE3500','eBSC_Controller'].map(name=>root.getObjectByName(name));
+const rightDevice=root.getObjectByName('LCS_Controller');
+const positions=leftDevices.map(node=>node.getWorldPosition(new THREE.Vector3()));
+assert.ok(positions.every(p=>p.z<0),'Three devices are on the left internal face');
+assert.ok(positions[0].x<positions[1].x && positions[1].x<positions[2].x,'Extended switch, switch, eBSC left-to-right');
+assert.ok(rightDevice.getWorldPosition(new THREE.Vector3()).z>0,'LCS is on the right internal face');
+for(const node of [...leftDevices,rightDevice]){
+ const front=new THREE.Vector3(-1,0,0).applyQuaternion(node.getWorldQuaternion(new THREE.Quaternion()));
+ assert.ok(node===rightDevice ? front.z<-.99 : front.z>.99,'Ports face into the service compartment');
+}
+const hvacBox=new THREE.Box3().setFromObject(root.getObjectByName('HVAC_Unit'));
+for(const node of leftDevices)assert.ok(!new THREE.Box3().setFromObject(node).intersectsBox(hvacBox),'Equipment clears HVAC');
+const panel=root.getObjectByName('E_Panel_Detailed');
+for(let number=1;number<=6;number++){
+ const cable=root.getObjectByName(`RBMS_${number}_Cable`);
+ assert.equal(cable.parent.name,'Extended_Switch','Pink cable follows its expansion switch');
+ const port=root.getObjectByName(`Expansion_RJ45_2_${number}`).getWorldPosition(new THREE.Vector3());
+ assert.ok(cable.children[0].localToWorld(new THREE.Vector3(0,-1,0)).distanceTo(port)<1e-5,'Pink cable plugs into LAN port');
+ for(let index=1;index<cable.children.length;index++){
+  const previous=cable.children[index-1].localToWorld(new THREE.Vector3(0,1,0));
+  const next=cable.children[index].localToWorld(new THREE.Vector3(0,-1,0));
+  assert.ok(previous.distanceTo(next)<1e-5,'Pink cable segments remain joined');
+ }
+}
+const links=panel.children.filter(node=>/^Switch_eBSC_Link_\d$/.test(node.name));
+assert.equal(links.length,2,'Only two eBSC LAN connections');
+assert.equal(root.getObjectByName('eBSC_Controller').children.filter(n=>n.name.startsWith('eBSC_LAN_Cable')).length,0,'No dangling old LAN cables');
+for(const link of links){
+ const from=root.getObjectByName(link.userData.from).getWorldPosition(new THREE.Vector3());
+ const to=root.getObjectByName(link.userData.to).getWorldPosition(new THREE.Vector3());
+ const first=link.children[0],last=link.children.at(-1);
+ assert.ok(first.localToWorld(new THREE.Vector3(0,-1,0)).distanceTo(from)<1e-5,'Cable starts at eBSC port');
+ assert.ok(last.localToWorld(new THREE.Vector3(0,1,0)).distanceTo(to)<1e-5,'Cable ends at switch port');
+}
+for(const device of leftDevices)for(const duct of panel.children.filter(n=>n.name.startsWith('Horizontal_Wiring_Duct'))){
+ assert.ok(!new THREE.Box3().setFromObject(device).intersectsBox(new THREE.Box3().setFromObject(duct)),'Raised devices clear central shelves');
+}
 const materials=new Set();root.traverse(n=>{if(n.isMesh)materials.add(n.material);});assert.equal(materials.size,13);assert.equal([...materials].filter(m=>m.normalMap&&m.metalnessMap&&m.roughnessMap).length,4);
 const racks=root.getObjectByName('Internal_Battery_Racks');assert.equal(racks.children.length,6);
 let count=0;root.traverse(n=>{if(/^Battery_Module_\d/.test(n.name))count++;});assert.equal(count,42);

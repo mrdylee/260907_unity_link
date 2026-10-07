@@ -68,7 +68,8 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 | 문 동작·모델 복제 | `src/ESSModel.ts` |
 | 디자인·반응형 | `src/style.css` |
 | 웹 3D 모델 | `public/models/ess-container.glb` |
-| 양문 Blender 원본 | `Blender/ESS_Paired_Doors/ESS_Paired_Doors.blend` |
+| 최신 패널 배치 Blender 원본 | `Blender/ESS_Panel_Network/ESS_Panel_Network.blend` |
+| 이전 양문 Blender 원본 | `Blender/ESS_Paired_Doors/ESS_Paired_Doors.blend` |
 | Blender 변환 스크립트 | `scripts/paired-doors.py` |
 | 검증 | `tests/telemetry.test.ts`, `tests/verify.mjs` |
 

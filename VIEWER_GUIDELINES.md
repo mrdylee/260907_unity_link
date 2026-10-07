@@ -82,3 +82,20 @@
 - 모의 데이터 표시, 경고 색상과 설명, 좁은 화면에서 스크롤·버튼 접근성을 확인합니다.
 
 개별 **랙 라벨 또는 진단 카드 클릭**은 해당 랙을 확대하고 진단 말풍선을 고정합니다. 내부가 보이도록 그 랙의 양문 쌍을 엽니다. `배터리 랙` 버튼으로 선택된 컨테이너의 랙 전체 보기로 돌아갑니다. 마우스만 올릴 때는 확대하지 않습니다.
+
+## 패널 장치 배치 (2026-10-07)
+
+문을 열고 내부를 바라보는 기준으로 왼쪽 장착면에는 Extended Switch → Switch → eBSC를 왼쪽에서 오른쪽 순서로 배치합니다. LCS는 오른쪽 장착면에 있고, 모든 포트는 내부를 향합니다. 기존 HVAC와의 간섭을 피하도록 왼쪽 장치는 안쪽으로 이격했습니다. 확장 스위치는 `Extended_Switch` 그룹입니다. 최신 Blender 원본은 `Blender/ESS_Panel_Layout/ESS_Panel_Layout.blend`이며, 웹 모델도 동일한 배치입니다.
+
+재생성: `scripts/panel-layout.py`는 이전 양문 Blender 원본과 **배치 수정 전 GLB**를 입력으로 사용합니다. Blender 명령 끝의 `-- /path/to/original.glb`로 원본 GLB를 지정하세요. 이미 변경된 GLB를 입력으로 반복 실행하지 않습니다.
+
+### 중앙 패널 사진 반영
+중앙은 전원 모듈 두 단, 차단기·단자대·배선 덕트로 구성한 사진 참고 목업입니다. 최신 원본은 `Blender/ESS_Panel_Center/ESS_Panel_Center.blend`입니다. 실측 치수와 세부 품번은 미확인입니다. 핵심 장치 Extended Switch / Switch / LCS / eBSC는 하단 버튼으로 각각 확대합니다. BASIC EWCS, BPU CTRL은 사진에서 읽히지만 실제 회로 매핑은 미확인이라 장치에 임의 연결하지 않았습니다.
+
+### Switch–eBSC 연결
+왼쪽 장치 행을 15cm 높여 중앙 덕트와 겹치지 않도록 했습니다. eBSC LAN 1·2만 Switch RJ45 4·5로 연결한 시각화이며, LAN 3·4는 비워둡니다. 실제 사용 포트 번호는 미지정이라 이 번호 배정은 목업 기준입니다. 최신 원본은 `Blender/ESS_Panel_Network/ESS_Panel_Network.blend`입니다.
+
+### 분홍색 LAN 케이블 수정
+분홍색 RBMS 케이블 6가닥은 Extended Switch의 LAN 포트에 연결됩니다. 확장 스위치 분리 후 케이블의 부모 그룹과 끝점을 함께 수정했습니다. 포트 끝점 및 구간 사이 연속성을 모델 테스트로 검사합니다.
+
+재생성 순서: 배치 변경 전 GLB와 ESS_Paired_Doors.blend에서 panel-layout.py → 생성된 ESS_Panel_Layout.blend에서 panel-center.py → ESS_Panel_Center.blend에서 panel-network-cables.py → ESS_Panel_Network.blend에서 fix-expansion-cables.py를 실행합니다. 각 단계는 직전 단계의 웹 GLB를 입력으로 사용하며, 마지막 두 스크립트는 중복 실행을 차단합니다.

@@ -37,6 +37,18 @@ function createRackMarkers():void {
  for(const [id,nodeName] of [['LCS','LCS_Controller'],['eBSC','eBSC_Controller']] as const){const node=model?.root.getObjectByName(nodeName);if(!node)continue;const box=new THREE.Box3().setFromObject(node);const anchor=new THREE.Vector3((box.min.x+box.max.x)/2,(box.min.y+box.max.y)/2,(box.min.z+box.max.z)/2);const element=document.createElement('button');element.className='rack-marker equipment-marker';element.dataset.equipment=id;element.textContent=id;layer.append(element);sceneMarkers.push({element,anchor});}
 }
 function showSelectedMarkers():void {models.forEach(item=>item.root.visible=item===model);document.querySelector<HTMLElement>('#container-markers')!.style.display='none';document.querySelector<HTMLElement>('#rack-markers')!.style.display='block';}
+function focusPanelDevice(name:string,label:string):void {
+ if(!model)return;showSelectedMarkers();model.setAll(true);
+ const node=model.root.getObjectByName(name)!;
+ const target=node.getWorldPosition(new THREE.Vector3());
+ camera.position.copy(target).add(new THREE.Vector3(-.35,.12,name==='LCS_Controller' ? -1.1 : 1.1));
+ controls.target.copy(target);controls.update();status.textContent=label;
+}
+for(const [name,label] of [['Extended_Switch','Extended Switch'],['Network_Switch_IE3500','Switch'],['LCS_Controller','LCS']]){
+ const button=document.createElement('button');button.textContent=label;
+ button.addEventListener('click',()=>focusPanelDevice(name,label));
+ document.querySelector('#ebsc')!.before(button);
+}
 function selectContainer(index:number):void {
  model=models[index];if(!model)return;
  document.querySelector<HTMLSelectElement>('#container-select')!.value=String(index);
@@ -79,7 +91,7 @@ on('zoom-in',()=>zoom(.8));on('zoom-out',()=>zoom(1.25));
 on('fullscreen',()=>{if(document.fullscreenElement)void document.exitFullscreen();else void document.documentElement.requestFullscreen().catch(()=>{status.textContent='이 브라우저에서는 전체화면을 사용할 수 없습니다.';});});
 on('racks',()=>{showSelectedMarkers();model?.setAll(true);view(new THREE.Vector3(2.5,3.8,9.5),new THREE.Vector3(0,1.35,0));status.textContent='랙 6개 · 각 7팩';});
 on('panel',()=>{showSelectedMarkers();model?.setAll(true);view(new THREE.Vector3(-6.4,1.8,.3),new THREE.Vector3(-2.5,1.12,.3));status.textContent='내부 장비와 문 안쪽 FACP';});
-on('ebsc',()=>{if(!model)return;showSelectedMarkers();model.setAll(true);const node=model.root.getObjectByName('eBSC_Controller')!;const target=node.getWorldPosition(new THREE.Vector3());camera.position.copy(target).add(new THREE.Vector3(-1.1,.06,0));controls.target.copy(target);controls.update();status.textContent='eBSC · LAN 포트 4개';});
+on('ebsc',()=>{if(!model)return;showSelectedMarkers();model.setAll(true);const node=model.root.getObjectByName('eBSC_Controller')!;const target=node.getWorldPosition(new THREE.Vector3());camera.position.copy(target).add(new THREE.Vector3(-.3,.06,1.1));controls.target.copy(target);controls.update();status.textContent='eBSC · LAN 포트 4개';});
 let previous=performance.now();renderer.setAnimationLoop(time=>{const dt=(time-previous)/1000;previous=time;models.forEach(item=>item.update(dt));controls.update();renderer.render(scene,camera);const {width,height}=viewport.getBoundingClientRect();for(const marker of [...sceneMarkers,...containerMarkers]){const point=marker.anchor.clone().project(camera);marker.element.hidden=point.z < -1 || point.z > 1;marker.element.style.transform=`translate(${(point.x*.5+.5)*width}px,${(-point.y*.5+.5)*height}px) translate(-50%,-50%)`;}});
 async function loadModel():Promise<void>{
 try {model=await ESSModel.load('./models/ess-container.glb');for(let index=0;index<6;index++){const instance=index===0?model:model.clone();instance.root.position.set((index%3-1)*8.5,0,(Math.floor(index/3)-.5)*7);instance.root.name=`ESS_${index+1}`;models.push(instance);scene.add(instance.root);instance.root.updateMatrixWorld(true);const element=document.createElement('button');element.className='container-marker';element.textContent=`ESS ${String(index+1).padStart(2,'0')}`;element.addEventListener('click',()=>selectContainer(index));document.querySelector('#container-markers')!.append(element);containerMarkers.push({element,anchor:instance.root.position.clone().add(new THREE.Vector3(0,3.5,0))});}createRackMarkers();document.getElementById('loading')!.remove();home();}

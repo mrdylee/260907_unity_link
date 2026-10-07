@@ -1,0 +1,2 @@
+# Panel equipment layout
+Approved order: looking at the left internal mounting face, Extended Switch, Switch, eBSC run left to right. LCS occupies the opposite right face. Viewer entrance looks along +X, left wall is -Z. Devices face inward. Split existing expansion geometry from switch; retain ports, cables, materials, and controller names. Update Blender source and GLB together, preserve original paired-door source. Verify equipment positions, orientation, door regression, and browser view. No telemetry or physical command changes.

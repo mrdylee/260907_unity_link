@@ -101,3 +101,8 @@
 재생성 순서: 배치 변경 전 GLB와 ESS_Paired_Doors.blend에서 panel-layout.py → 생성된 ESS_Panel_Layout.blend에서 panel-center.py → ESS_Panel_Center.blend에서 panel-network-cables.py → ESS_Panel_Network.blend에서 fix-expansion-cables.py를 실행합니다. 각 단계는 직전 단계의 웹 GLB를 입력으로 사용하며, 마지막 두 스크립트는 중복 실행을 차단합니다.
 
 LCS 뒷면은 오른쪽 흰 측면 패널 안쪽 면에 밀착합니다. 재생성 마지막 단계에 `mount-lcs-to-wall.py`를 실행하며, 벽과 하우징 면의 간격은 자동 테스트로 확인합니다.
+
+### 환기 덮개
+닫힌 배터리 문 정면 기준 좌상 1, 우상 2, 좌하 3, 우하 4입니다. 덮개 클릭 시 1·4 또는 2·3이 함께 하단 X축 기준 바깥으로 45도 열리고, 다시 클릭하면 닫힙니다. 큰 배터리 문과 개폐 상태는 독립이며 덮개는 문에 붙어 함께 이동합니다. 실제 가스 감지 신호 연결은 아직 없고 클릭 시뮬레이션입니다. 최신 Blender 원본: Blender/ESS_Vent_Doors/ESS_Vent_Doors.blend. 재생성은 벽면 LCS 수정 후 vent-hinges.py를 한 번 실행합니다.
+
+하단 `환기구 열기/닫기` 버튼은 선택 컨테이너의 네 덮개를 모두 열거나 닫습니다. 일부만 열려 있으면 모두 열고, 모두 열려 있으면 모두 닫습니다. 덮개 직접 클릭은 대각선 짝 동작을 유지합니다.

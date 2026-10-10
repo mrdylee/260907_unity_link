@@ -9,8 +9,14 @@ export class ESSModel {
   readonly root: THREE.Group;
   private readonly doors: { node: THREE.Object3D; target: THREE.Quaternion; angle: number }[];
   private readonly closed = new THREE.Quaternion();
+  private readonly vents: { node: THREE.Object3D; target: THREE.Quaternion }[];
   private constructor(root: THREE.Group) {
     this.root = root;
+    this.vents = Array.from({length:4},(_,i)=>{
+      const node=root.getObjectByName(`Vent_Hinge_${String(i+1).padStart(2,'0')}`);
+      if(!node)throw new Error(`Missing vent ${i+1}`);
+      return {node,target:node.quaternion.clone()};
+    });
     this.doors = DOORS.map(({ name, angle }) => {
       const node = root.getObjectByName(name);
       if (!node) throw new Error(`Missing door: ${name}`);
@@ -22,6 +28,11 @@ export class ESSModel {
     return new ESSModel(scene);
   }
   clone(): ESSModel { return new ESSModel(this.root.clone(true)); }
+  toggleVents(): boolean {
+    const open=this.vents.some(vent=>vent.target.angleTo(this.closed)<.01);
+    for(const vent of this.vents)vent.target.setFromAxisAngle(new THREE.Vector3(1,0,0),open?Math.PI/4:0);
+    return open;
+  }
   setDoor(name: string, open: boolean): void {
     const door = this.doors.find(d => d.node.name === name);
     if (!door) throw new Error(`Unknown door: ${name}`);
@@ -30,6 +41,12 @@ export class ESSModel {
   setAll(open: boolean): void { for (const door of this.doors) this.setDoor(door.node.name, open); }
   toggleObject(object: THREE.Object3D): string | null {
     for (let current: THREE.Object3D | null = object; current; current = current.parent) {
+      const ventIndex=this.vents.findIndex(vent=>vent.node===current);
+      if(ventIndex>=0){
+        const open=this.vents[ventIndex].target.angleTo(this.closed)<.01;
+        for(const index of [ventIndex,3-ventIndex])this.vents[index].target.setFromAxisAngle(new THREE.Vector3(1,0,0),open?Math.PI/4:0);
+        return this.vents[ventIndex].node.name;
+      }
       const door = this.doors.find(d => d.node === current);
       if (door) {
         const open = door.target.angleTo(this.closed) < .01;
@@ -44,6 +61,7 @@ export class ESSModel {
     return null;
   }
   update(deltaSeconds: number): void {
+    for(const vent of this.vents)vent.node.quaternion.rotateTowards(vent.target,THREE.MathUtils.degToRad(90)*Math.min(deltaSeconds,.1));
     for (const door of this.doors) door.node.quaternion.rotateTowards(door.target, THREE.MathUtils.degToRad(140) * Math.min(deltaSeconds, .1));
   }
   dispose(): void {

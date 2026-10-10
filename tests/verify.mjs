@@ -9,6 +9,28 @@ globalThis.createImageBitmap = async blob => { const img = await loadImage(Buffe
 globalThis.ProgressEvent = class { constructor(type, values) { this.type=type;Object.assign(this,values); } };
 const model=await ESSModel.load(`${process.env.ESS_TEST_URL || 'http://127.0.0.1:3006'}/models/ess-container.glb`);
 const root=model.root;
+const vents=Array.from({length:4},(_,i)=>root.getObjectByName(`Vent_Hinge_${String(i+1).padStart(2,'0')}`));
+assert.equal(model.toggleVents(),true);
+for(let step=0;step<100;step++)model.update(1/60);
+assert.ok(vents.every(v=>Math.abs(v.quaternion.angleTo(new THREE.Quaternion())-Math.PI/4)<1e-5));
+assert.equal(model.toggleVents(),false);
+for(let step=0;step<100;step++)model.update(1/60);
+assert.ok(vents.every(v=>v.quaternion.angleTo(new THREE.Quaternion())<1e-5));
+for(let index=0;index<4;index++){
+ let mesh;vents[index].traverse(n=>{if(n.isMesh&&!mesh)mesh=n;});
+ const hingeBefore=vents[index].getWorldPosition(new THREE.Vector3());
+ const topBefore=vents[index].localToWorld(new THREE.Vector3(0,.3,0));
+ assert.equal(model.toggleObject(mesh),vents[index].name);
+ for(let step=0;step<100;step++)model.update(1/60);
+ root.updateMatrixWorld(true);
+ for(let j=0;j<4;j++)assert.ok(Math.abs(vents[j].quaternion.angleTo(new THREE.Quaternion())-((j===index||j===3-index)?Math.PI/4:0))<1e-5,'Only diagonal vent pair opens 45 degrees');
+ assert.ok(vents[index].getWorldPosition(new THREE.Vector3()).distanceTo(hingeBefore)<1e-6,'Lower hinge stays fixed');
+ const topAfter=vents[index].localToWorld(new THREE.Vector3(0,.3,0));
+ assert.ok(topAfter.z>topBefore.z && topAfter.y<topBefore.y,'Cover top tilts outward and downward');
+ assert.ok(vents[index].parent.quaternion.angleTo(new THREE.Quaternion())<1e-6,'Vent click leaves battery door closed');
+ model.toggleObject(mesh);for(let step=0;step<100;step++)model.update(1/60);
+ assert.ok(vents.every(v=>v.quaternion.angleTo(new THREE.Quaternion())<1e-5),'Second click closes the pair');
+}
 root.updateMatrixWorld(true);
 const leftDevices=['Extended_Switch','Network_Switch_IE3500','eBSC_Controller'].map(name=>root.getObjectByName(name));
 const rightDevice=root.getObjectByName('LCS_Controller');

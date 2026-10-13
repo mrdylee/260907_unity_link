@@ -9,7 +9,20 @@ globalThis.createImageBitmap = async blob => { const img = await loadImage(Buffe
 globalThis.ProgressEvent = class { constructor(type, values) { this.type=type;Object.assign(this,values); } };
 const model=await ESSModel.load(`${process.env.ESS_TEST_URL || 'http://127.0.0.1:3006'}/models/ess-container.glb`);
 const root=model.root;
-const vents=Array.from({length:4},(_,i)=>root.getObjectByName(`Vent_Hinge_${String(i+1).padStart(2,'0')}`));
+const ventNodes=[];root.traverse(n=>{if(n.name.startsWith('Vent_Hinge_'))ventNodes.push(n);});
+assert.equal(ventNodes.length,4,'Four covers on the outer double doors');
+const ventDoorNumbers=[1,2,5,6];
+const vents=ventDoorNumbers.map(number=>root.getObjectByName(`Vent_Hinge_${String(number).padStart(2,'0')}`));
+for(const number of [3,4]){
+ const door=root.getObjectByName(`Door_Hinge_${String(number).padStart(2,'0')}`);
+ assert.equal(door.children.filter(n=>n.name.startsWith('Vent_Hinge_')).length,0,'Middle doors have no vent covers');
+}
+for(let index=0;index<4;index++){
+ const door=root.getObjectByName(`Door_Hinge_${String(ventDoorNumbers[index]).padStart(2,'0')}`);
+ assert.equal(vents[index].parent,door,'Vent follows its numbered door');
+ assert.equal(door.children.filter(n=>n.name.startsWith('Vent_Hinge_')).length,1,'No extra vent on a door');
+ assert.ok(index%2 ? vents[index].position.y>1.5 : vents[index].position.y<.5,'Odd door vent below, even door vent above');
+}
 assert.equal(model.toggleVents(),true);
 for(let step=0;step<100;step++)model.update(1/60);
 assert.ok(vents.every(v=>Math.abs(v.quaternion.angleTo(new THREE.Quaternion())-Math.PI/4)<1e-5));
@@ -23,7 +36,8 @@ for(let index=0;index<4;index++){
  assert.equal(model.toggleObject(mesh),vents[index].name);
  for(let step=0;step<100;step++)model.update(1/60);
  root.updateMatrixWorld(true);
- for(let j=0;j<4;j++)assert.ok(Math.abs(vents[j].quaternion.angleTo(new THREE.Quaternion())-((j===index||j===3-index)?Math.PI/4:0))<1e-5,'Only diagonal vent pair opens 45 degrees');
+ const paired=index%2 ? index-1 : index+1;
+ for(let j=0;j<4;j++)assert.ok(Math.abs(vents[j].quaternion.angleTo(new THREE.Quaternion())-((j===index||j===paired)?Math.PI/4:0))<1e-5,'Only the diagonal pair on the same double doors opens 45 degrees');
  assert.ok(vents[index].getWorldPosition(new THREE.Vector3()).distanceTo(hingeBefore)<1e-6,'Lower hinge stays fixed');
  const topAfter=vents[index].localToWorld(new THREE.Vector3(0,.3,0));
  assert.ok(topAfter.z>topBefore.z && topAfter.y<topBefore.y,'Cover top tilts outward and downward');

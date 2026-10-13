@@ -12,9 +12,9 @@ export class ESSModel {
   private readonly vents: { node: THREE.Object3D; target: THREE.Quaternion }[];
   private constructor(root: THREE.Group) {
     this.root = root;
-    this.vents = Array.from({length:4},(_,i)=>{
-      const node=root.getObjectByName(`Vent_Hinge_${String(i+1).padStart(2,'0')}`);
-      if(!node)throw new Error(`Missing vent ${i+1}`);
+    this.vents = [1,2,5,6].map(number=>{
+      const node=root.getObjectByName(`Vent_Hinge_${String(number).padStart(2,'0')}`);
+      if(!node)throw new Error(`Missing vent ${number}`);
       return {node,target:node.quaternion.clone()};
     });
     this.doors = DOORS.map(({ name, angle }) => {
@@ -44,7 +44,7 @@ export class ESSModel {
       const ventIndex=this.vents.findIndex(vent=>vent.node===current);
       if(ventIndex>=0){
         const open=this.vents[ventIndex].target.angleTo(this.closed)<.01;
-        for(const index of [ventIndex,3-ventIndex])this.vents[index].target.setFromAxisAngle(new THREE.Vector3(1,0,0),open?Math.PI/4:0);
+        for(const index of [ventIndex,ventIndex%2 ? ventIndex-1 : ventIndex+1])this.vents[index].target.setFromAxisAngle(new THREE.Vector3(1,0,0),open?Math.PI/4:0);
         return this.vents[ventIndex].node.name;
       }
       const door = this.doors.find(d => d.node === current);

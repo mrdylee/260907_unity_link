@@ -53,6 +53,7 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 - 하단 메뉴로도 컨테이너 선택 가능. 상세 보기에서는 나머지 다섯 대를 숨김.
 - 랙 라벨·진단 카드 클릭은 랙 확대 + 해당 양문 열기 + 진단 말풍선 고정.
 - 랙 문은 1–2, 3–4, 5–6번이 한 쌍. 서로 반대 방향으로 바깥쪽 개폐. FACP는 앞문을 따라 움직임.
+- 환기 덮개는 1번 하단·2번 상단, 5번 하단·6번 상단의 네 개. 가운데 3·4번 문은 제외하며 덮개 클릭은 1–2 또는 5–6 쌍 개폐, 하단 버튼은 네 개 전체 개폐.
 - 오른쪽 진단 패널과 반투명 개별 말풍선. SOC·SOH·온도·전류·전압·STATE·진단 표시.
 - LCS DS 상태와 eBSC 통신 정보. eBSC는 LAN 포트 4개 장치이며 주변 스위치와 구분.
 - 컨테이너별로 구분되는 **고정 모의 데이터**. 실제 장비 계측이나 실시간 갱신은 아님.
@@ -68,7 +69,7 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 | 문 동작·모델 복제 | `src/ESSModel.ts` |
 | 디자인·반응형 | `src/style.css` |
 | 웹 3D 모델 | `public/models/ess-container.glb` |
-| 최신 패널 배치 Blender 원본 | `Blender/ESS_Vent_Doors/ESS_Vent_Doors.blend` |
+| 최신 패널·환기구 배치 Blender 원본 | `Blender/ESS_Vent_Layout/ESS_Vent_Layout.blend` |
 | 이전 양문 Blender 원본 | `Blender/ESS_Paired_Doors/ESS_Paired_Doors.blend` |
 | Blender 변환 스크립트 | `scripts/paired-doors.py` |
 | 검증 | `tests/telemetry.test.ts`, `tests/verify.mjs` |

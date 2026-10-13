@@ -93,10 +93,10 @@
 중앙은 전원 모듈 두 단, 차단기·단자대·배선 덕트로 구성한 사진 참고 목업입니다. 최신 원본은 `Blender/ESS_Panel_Center/ESS_Panel_Center.blend`입니다. 실측 치수와 세부 품번은 미확인입니다. 핵심 장치 Extended Switch / Switch / LCS / eBSC는 하단 버튼으로 각각 확대합니다. BASIC EWCS, BPU CTRL은 사진에서 읽히지만 실제 회로 매핑은 미확인이라 장치에 임의 연결하지 않았습니다.
 
 ### Switch–eBSC 연결
-왼쪽 장치 행을 15cm 높여 중앙 덕트와 겹치지 않도록 했습니다. eBSC LAN 1·2만 Switch RJ45 4·5로 연결한 시각화이며, LAN 3·4는 비워둡니다. 실제 사용 포트 번호는 미지정이라 이 번호 배정은 목업 기준입니다. 최신 원본은 `Blender/ESS_Panel_Network/ESS_Panel_Network.blend`입니다.
+왼쪽 장치 행을 15cm 높여 중앙 덕트와 겹치지 않도록 했습니다. 이전 단계에서 eBSC LAN 1·2를 Switch RJ45 4·5로 연결했으며, 최신 배정은 아래 **Cisco 사진 디테일과 최종 케이블 배정**을 따릅니다. LAN 3·4는 비워둡니다. 이 단계 원본은 `Blender/ESS_Panel_Network/ESS_Panel_Network.blend`입니다.
 
 ### 분홍색 LAN 케이블 수정
-분홍색 RBMS 케이블 6가닥은 Extended Switch의 LAN 포트에 연결됩니다. 확장 스위치 분리 후 케이블의 부모 그룹과 끝점을 함께 수정했습니다. 포트 끝점 및 구간 사이 연속성을 모델 테스트로 검사합니다.
+이전 단계에서는 분홍색 RBMS 케이블 6가닥을 Extended Switch에 연결했습니다. 최종 사용자 수정 요청에 따라 아래 단계에서 가운데 IE3500으로 옮깁니다. 포트 끝점 및 구간 사이 연속성을 모델 테스트로 검사합니다.
 
 재생성 순서: 배치 변경 전 GLB와 ESS_Paired_Doors.blend에서 panel-layout.py → 생성된 ESS_Panel_Layout.blend에서 panel-center.py → ESS_Panel_Center.blend에서 panel-network-cables.py → ESS_Panel_Network.blend에서 fix-expansion-cables.py를 실행합니다. 각 단계는 직전 단계의 웹 GLB를 입력으로 사용하며, 마지막 두 스크립트는 중복 실행을 차단합니다.
 
@@ -106,3 +106,92 @@ LCS 뒷면은 오른쪽 흰 측면 패널 안쪽 면에 밀착합니다. 재생�
 환기 덮개는 총 네 개이며 1번 문 하단·2번 문 상단, 5번 문 하단·6번 문 상단에 대각선으로 배치합니다. 가운데 3·4번 문에는 환기 덮개가 없습니다. 덮개 번호는 문 번호와 같고, 클릭 시 1·2 또는 5·6 중 해당 쌍만 하단 X축 기준 바깥으로 45도 열리며 다시 클릭하면 닫힙니다. 큰 배터리 문과 개폐 상태는 독립이며 덮개는 문에 붙어 함께 이동합니다. 실제 가스 감지 신호 연결은 아직 없고 클릭 시뮬레이션입니다. 최신 Blender 원본: Blender/ESS_Vent_Layout/ESS_Vent_Layout.blend. 재생성은 벽면 LCS 수정 후 vent-hinges.py를 한 번 실행하고, 그 결과에 vent-layout.py를 한 번 실행합니다.
 
 하단 `환기구 열기/닫기` 버튼은 선택 컨테이너의 네 덮개를 모두 열거나 닫습니다. 일부만 열려 있으면 모두 열고, 모두 열려 있으면 모두 닫습니다. 덮개 직접 클릭은 각 양문의 대각선 짝 동작을 유지합니다.
+
+### eBSC 전면 디테일
+사진 기준 `LG Energy Solution`, `JF3 eBSC`, LED 1·2·3, USB·UART, LAN1~LAN4를 인쇄 표시합니다. 사용자 요청에 따라 USB와 UART 모두 직사각형 USB 2.0 단자 형태로 표현하고 USB·UART 글씨는 유지합니다. LED 세 개는 모의 외관이며 실제 장비 신호와 연결되지 않았습니다.
+
+검은 금속 케이스, 고정 나사, 은색 단자 테두리, LAN 내부 접점, 두 노란 RJ45 커넥터를 표현합니다. Switch 연결은 LAN1·LAN2 두 개만 유지하고 LAN3·LAN4는 빈 단자로 보여줍니다. 사진의 실측 치수나 읽을 수 없는 일련번호·QR은 재현하지 않았습니다. 작은 글씨는 한 장의 인쇄 텍스처로 구성합니다.
+
+최신 Blender 원본은 `Blender/ESS_eBSC_Detail/ESS_eBSC_Detail.blend`입니다. 재생성은 앞 단계의 환기구 배치 원본과 GLB를 준비한 뒤 `node scripts/ebsc-face.mjs`, Blender에서 `scripts/ebsc-detail.py` 순서로 한 번 실행합니다. 기존에 디테일이 들어간 GLB에 중복 실행하지 않습니다.
+
+### IE3500 방향
+Extended Switch → IE3500 → eBSC 순서를 유지합니다. 가운데 IE3500은 단자 앞면을 실내로 향하게 둔 채 앞면 축 기준 180도 회전하여 8개 RJ45 단자는 오른쪽, 3개 SFP 단자는 왼쪽에 놓습니다. 이 단계의 보라색 여섯 케이블은 아직 Extended Switch에 연결되며, 아래 최종 단계에서 IE3500으로 옮깁니다.
+
+eBSC 디테일 이후 `scripts/switch-orientation.py`를 한 번 실행한 최종 원본은 `Blender/ESS_IE3500_Orientation/ESS_IE3500_Orientation.blend`입니다.
+
+### Cisco 사진 디테일과 최종 케이블 배정
+
+사용자가 제공한 IE3500 정면 사진을 기준으로 가운데 본체는 오른쪽 RJ45 8개를 4개씩 두 묶음으로, 왼쪽 SFP 3개를 세로로 배치합니다. 오른쪽 단자 번호는 위에서 아래로 1/4~1/11입니다. 왼쪽 확장 모듈을 본체와 1.5mm 간격으로 붙이고 결합부, Cisco/모델 글씨, 포트 번호, 콘솔, USB/SD 커버, 전원·알람 단자, 나사, 방열판을 추가합니다. 각 장치의 작은 글씨는 인쇄 텍스처로 구성하며 읽을 수 없는 실제 일련번호·MAC 주소는 만들지 않습니다.
+
+| 케이블 | 연결 포트 |
+|---|---|
+| 보라색 RBMS 1 | 가운데 IE3500 1/1 |
+| 보라색 RBMS 2 | 가운데 IE3500 1/2 |
+| 보라색 RBMS 3 | 가운데 IE3500 1/4 |
+| 보라색 RBMS 4 | 가운데 IE3500 1/5 |
+| 보라색 RBMS 5 | 가운데 IE3500 1/6 |
+| 보라색 RBMS 6 | 가운데 IE3500 1/11 |
+| eBSC LAN1, 노란 커넥터 | 왼쪽 확장 모듈 상단 2/9 |
+| eBSC LAN2, 노란 커넥터 | 가운데 IE3500 빈 포트 1/7 |
+
+보라색 여섯 가닥의 반대쪽 끝은 eBSC 쪽의 맨 위 빨간색·검은색 배선 위로 올려 상단 제어 패널 덕트 안으로 넣습니다. 이전 왼쪽 벽 방향으로 빼지 않습니다. 1/1·1/2는 SFP 영역이므로 구리 모듈 외관을 추가한 목업입니다. 실제 트랜시버 품번·호환성이나 랙별 신호 매핑을 검증한 회로도는 아닙니다. eBSC 쪽 배선 색은 흰색이고 커넥터는 노란색입니다. 케이블과 플러그의 부모 그룹도 함께 옮겨 모델 복제·회전 시 연결이 유지됩니다.
+
+형상 참고: [Cisco IE3500 데이터시트](https://www.cisco.com/c/en/us/products/collateral/networking/industrial-switches/ie3500-rugged-series/ie3500-rugged-series-ds.html), [확장 모듈 결합 설명](https://www.cisco.com/c/en/us/td/docs/IIOT/switches/ie35xx/hw-install-guide/b-ie35xx-hig/m_switch-install.html). 사용자가 제공한 사진의 정면 배치와 케이블 수정 요청을 우선합니다.
+
+재생성은 `ESS_IE3500_Orientation.blend`와 해당 단계 GLB에서 `node scripts/cisco-face.mjs` → Blender의 `scripts/cisco-detail.py` → 생성된 `ESS_Cisco_Detail.blend`에서 `scripts/cisco-network-routes.py` 순서로 한 번씩 실행합니다. 각 단계는 직전 단계 GLB와 짝을 맞추며 이미 적용된 GLB에 중복 실행하지 않습니다. 케이블 스크립트에는 `-- /path/to/pre-routing.glb`로 원본을 지정할 수 있습니다. 최종 원본은 `Blender/ESS_Cisco_Network/ESS_Cisco_Network.blend`, 웹 모델은 `public/models/ess-container.glb`입니다.
+
+### 중앙 패널 배선 보강
+
+사용자가 다시 제공한 중앙 패널 사진을 참고하여 비어 있던 배선 공간을 채웁니다. 두 단 전원 모듈 주변의 짧은 직선 배선을 덕트까지 이어지는 곡선으로 교체하고, 위쪽 단자대의 빨강·검정 배선, 오른쪽 파란 케이블 묶음, 아래 차단기·단자대의 배선, 녹색·노란 접지 외관을 추가합니다. Cisco와 eBSC의 지정 포트 연결은 유지합니다.
+
+중앙 보강 배선은 색별 여섯 개 형상으로 묶어 그리기 명령 증가를 줄입니다. 사진을 참고한 외관 목업이며 실제 전원 회로·단자 번호나 접지 적합성을 검증한 모델은 아닙니다. 원본은 편집 가능한 Blender 곡선으로 유지합니다.
+
+`ESS_Cisco_Network.blend`와 해당 단계 GLB에서 `scripts/center-wiring-detail.py`를 한 번 실행합니다. 최신 전체 원본은 `Blender/ESS_Center_Wiring/ESS_Center_Wiring.blend`이며, 이미 배선 보강을 적용한 GLB에 중복 실행하지 않습니다.
+
+### 랙 하단 BPU와 검정색 팩
+
+사용자가 제공한 BPU 정면 사진을 참고하여 각 랙에 검정색 BPU 한 대를 하단에 추가합니다. 랙별 기존 팩 7개를 유지하므로 컨테이너 한 대당 42팩·6BPU, 여섯 컨테이너 전체는 252팩·36BPU입니다. 팩 사이 간격을 줄여 위로 옮기고 기존 랙 프레임 안에 BPU와 팩이 모두 들어가도록 배치합니다. 팩의 케이스와 정면도 BPU와 같은 검정색으로 맞춥니다.
+
+BPU는 중앙 팬·금속 보호 그릴, 빨간 POWER SW, DC 24V 제어 단자, 정면 RJ45와 신호 단자, 양쪽 대전류 단자의 투명 보호 덮개를 표현합니다. 읽히는 POWER SW, OFF/ON, BTM(−), TOP(+), CONTROL, DC 24V 표기를 넣고 읽을 수 없는 일련번호·QR은 만들지 않습니다. 사진 참고 외관으로, 전원 스위치·BPU 통신·랙 전기 연결을 실제 제어하는 기능은 없습니다.
+
+BPU 단계 Blender 원본은 `Blender/ESS_Rack_BPU/ESS_Rack_BPU.blend`입니다. `ESS_Center_Wiring.blend`와 해당 단계 GLB에서 `node scripts/bpu-face.mjs` 후 Blender의 `scripts/rack-bpu.py`를 한 번 실행합니다. BPU 6개는 같은 형상·재질을 공유합니다. 검증은 각 랙의 7팩·1BPU 구성, BPU가 모든 팩 아래에 있는지, 프레임 내부에 들어가는지, 외장 색상이 같은지 확인합니다.
+
+## LCS 사진 외형과 하단 LAN
+
+사용자 사진 `DE306A27-A5EC-4193-B526-9DD24CF1CB0C_1_105_c.jpeg`의 위쪽 검은 판형 장치가 LCS입니다. 사진 아래 TP-Link 스위치는 LCS가 아닙니다. 사진은 외형 확인을 위해 장치를 잠시 꺼낸 상태이므로 설치 위치는 기존 오른쪽 흰 벽면을 유지합니다.
+
+- 얇은 검은 직사각형 본체, 둥근 모서리, 네 고정 나사, 위아래 각각 네 묶음의 녹색 단자대를 사진 기준으로 표현합니다.
+- LAN 소켓은 **하단 모서리**에 있고 검은 플러그·주름형 부트·케이블이 아래로 이어집니다. 빨강·검정 전원선도 하단에서 배선 덕트로 이어집니다.
+- 전면 인쇄는 사용자 사진에서 추출한 표시 무늬입니다. 해상도로 식별되지 않는 핀 이름은 임의로 만들지 않았으며 실제 핀 배정이나 전기적 연결을 뜻하지 않습니다.
+- 실측 치수는 제공되지 않았으므로 기존 장착 폭 안에서 사진의 가로형 비율과 얇은 두께를 맞춘 시각화입니다.
+
+LCS 외형 단계 원본은 `Blender/ESS_LCS_Detail/ESS_LCS_Detail.blend`입니다. 재생성은 BPU 단계 Blender와 같은 단계 GLB에서 `node scripts/lcs-face.mjs '<사용자 원본 사진 경로>'`를 실행한 뒤 Blender로 `scripts/lcs-detail.py`를 한 번 실행합니다. 기존 PBR과 다른 장치는 보존합니다. 검증은 흰 벽면 밀착, 가로형 본체 비율, 위아래 단자대, 하단 LAN 방향과 케이블 연결, 기존 문·환기구·랙 기능을 포함합니다.
+
+## LCS 신호선과 중앙 패널 덕트 연결
+
+LCS 녹색 단자는 HW 신호·RS-485용 연결 단자라는 사용자 설명을 따릅니다. 실제 핀별 신호명이나 전기적 배정은 제공되지 않았으므로 색상과 가닥 수를 회로도로 해석하지 않습니다.
+
+- 위쪽 단자선은 보드 위로 빠져나와 왼쪽 중앙 패널의 상단 덕트로 들어갑니다.
+- 아래쪽 단자선은 보드 아래로 빠져나와 중앙 패널의 하단 덕트로 들어갑니다.
+- 모델에 있는 단자 구멍을 기준으로 위쪽 40가닥, 아래쪽 36가닥을 가는 빨강·검정 곡선으로 번갈아 연결했습니다. 전면 인쇄를 가리지 않으며 단자 입구에는 짧은 페룰을 표현합니다.
+- Blender에서는 편집 가능한 Bezier 곡선, 웹에서는 상하의 빨강·검정 배선 네 개와 페룰 두 개를 합친 여섯 개 메시를 사용합니다. 기존 재질을 공유합니다.
+
+LCS 신호선 단계 원본은 `Blender/ESS_LCS_Wiring/ESS_LCS_Wiring.blend`입니다. `ESS_LCS_Detail.blend`와 해당 단계 GLB에서 `scripts/lcs-signal-wiring.py`를 한 번 실행합니다. 검증은 각 단자 출발점, 실제 출력 메시의 양 끝, 상하 덕트 내부 종단점 및 기존 장치 동작을 확인합니다.
+
+### 보라색 네트워크 케이블 곡선
+
+IE3500에 연결된 보라색 여섯 가닥은 직선 조각 대신 연속 Bezier 곡선으로 표현합니다. 기존 포트 배정과 상단 덕트 진입점, 굵기·색을 유지합니다. 커넥터 앞 65mm와 덕트 진입 전 40mm는 곧게 유지하고, 그 사이를 접선 방향이 이어지는 곡선으로 연결합니다. 웹에서는 가닥당 하나의 메시로 출력합니다.
+
+보라색 곡선 단계 원본은 `Blender/ESS_Network_Curves/ESS_Network_Curves.blend`입니다. 직전 `ESS_LCS_Wiring.blend`와 해당 단계 GLB에서 `scripts/purple-network-curves.py`를 한 번 실행합니다. 검증은 포트 배정, 원래 연결 위치까지 도달하는 출력 메시, 덕트 진입 및 실제 화면의 곡률을 확인합니다.
+
+### eBSC 랜선 곡선
+
+eBSC LAN1→확장 모듈 2/9, LAN2→IE3500 1/7의 흰 랜선 두 가닥도 연속 Bezier 곡선으로 표현합니다. 노란 커넥터와 기존 연결 위치·굵기·색을 유지하며, 양 끝 55mm는 곧게 나와 단자 연결부를 보존합니다. 가운데는 포트 간 거리의 18%만큼 아래로 처져 정면에서도 여유 있는 곡선이 보이게 합니다. 웹에서는 가닥당 하나의 메시를 사용합니다.
+
+eBSC 곡선 단계 원본은 `Blender/ESS_LAN_Curves/ESS_LAN_Curves.blend`입니다. 직전 `ESS_Network_Curves.blend`와 해당 단계 GLB에서 `scripts/ebsc-lan-curves.py`를 한 번 실행합니다. 검증은 출력 곡선이 양쪽 포트에 닿는지와 실제 화면의 굴곡·커넥터 연결을 확인합니다.
+
+### 랙 양문 앞 기둥 제거
+
+사용자 요청에 따라 1–2번 및 5–6번 양문 구역 앞을 가리는 외함 기둥 `Door_Jamb_1`, `Door_Jamb_3`을 제거합니다. 랙 자체의 네 수직 프레임, 배터리 팩·BPU, 나머지 외함 기둥과 문 회전축은 유지합니다.
+
+최신 전체 원본은 `Blender/ESS_Clear_Rack_Openings/ESS_Clear_Rack_Openings.blend`입니다. `ESS_LAN_Curves.blend`와 해당 단계 GLB에서 `scripts/clear-rack-openings.py`를 한 번 실행합니다. 양문을 열어 두 개의 기둥이 보이지 않는지와 기존 개폐 동작을 확인합니다.

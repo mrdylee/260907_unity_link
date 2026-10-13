@@ -48,14 +48,21 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 
 ## 4. 현재 구현되어 있는 것
 
-- 동일한 컨테이너 6대, 3열 × 2행 배치. 각 컨테이너는 랙 6개·팩 42개.
+- 동일한 컨테이너 6대, 3열 × 2행 배치. 각 컨테이너는 랙 6개·팩 42개·BPU 6개. 랙마다 검정색 팩 7개와 하단 BPU 1개.
 - 전체 보기에서 컨테이너 본체·번호 라벨을 클릭하면 한 대를 확대하고 오른쪽 패널을 열어 해당 컨테이너 데이터로 변경.
 - 하단 메뉴로도 컨테이너 선택 가능. 상세 보기에서는 나머지 다섯 대를 숨김.
 - 랙 라벨·진단 카드 클릭은 랙 확대 + 해당 양문 열기 + 진단 말풍선 고정.
 - 랙 문은 1–2, 3–4, 5–6번이 한 쌍. 서로 반대 방향으로 바깥쪽 개폐. FACP는 앞문을 따라 움직임.
+- 1–2번 및 5–6번 양문을 열었을 때 앞을 가리던 외함 기둥 두 개를 제거함. 안쪽 랙 프레임과 나머지 기둥은 유지.
 - 환기 덮개는 1번 하단·2번 상단, 5번 하단·6번 상단의 네 개. 가운데 3·4번 문은 제외하며 덮개 클릭은 1–2 또는 5–6 쌍 개폐, 하단 버튼은 네 개 전체 개폐.
 - 오른쪽 진단 패널과 반투명 개별 말풍선. SOC·SOH·온도·전류·전압·STATE·진단 표시.
 - LCS DS 상태와 eBSC 통신 정보. eBSC는 LAN 포트 4개 장치이며 주변 스위치와 구분.
+- LCS는 사용자 사진 기준의 얇은 검은 판형 본체, 위아래 녹색 단자대, 네 고정 나사, 하단 Ethernet과 전원선으로 구성. 오른쪽 흰 벽면에 밀착하며 사진의 임시 외부 배치는 재현하지 않음.
+- LCS 위쪽 녹색 단자선은 중앙 패널 상단 덕트로, 아래쪽 단자선은 하단 덕트로 이어짐. 가는 빨강·검정 곡선을 번갈아 배치하며 실제 HW/RS-485 핀 배정은 미확인.
+- 사진 기준 eBSC 글씨·LED 3개·USB형 단자 2개, 결합된 IE3500/확장 모듈의 인쇄·단자·방열판. 최신 케이블 배정은 VIEWER_GUIDELINES.md 마지막 절을 따름.
+- IE3500 보라색 네트워크 케이블 6가닥은 포트와 상단 덕트 연결 위치를 유지한 연속 곡선. 커넥터 앞 짧은 직선 이후 부드럽게 휘어짐.
+- eBSC의 흰 랜선 2가닥도 연속 곡선. 노란 커넥터와 LAN1→확장 모듈 2/9, LAN2→IE3500 1/7 연결을 유지함.
+- 중앙 패널 사진을 참고한 모듈·단자대 사이 곡선 배선, 오른쪽 파란 케이블 묶음, 녹색·노란 접지 외관. 실제 회로 연결을 검증한 모델은 아님.
 - 컨테이너별로 구분되는 **고정 모의 데이터**. 실제 장비 계측이나 실시간 갱신은 아님.
 - 늦은 이전 데이터 응답이 최신 컨테이너 선택을 덮지 않도록 선택 버전 비교.
 
@@ -69,9 +76,17 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 | 문 동작·모델 복제 | `src/ESSModel.ts` |
 | 디자인·반응형 | `src/style.css` |
 | 웹 3D 모델 | `public/models/ess-container.glb` |
-| 최신 패널·환기구 배치 Blender 원본 | `Blender/ESS_Vent_Layout/ESS_Vent_Layout.blend` |
+| 최신 패널·환기구·eBSC·IE3500·랙 BPU·LCS Blender 원본 | `Blender/ESS_Clear_Rack_Openings/ESS_Clear_Rack_Openings.blend` |
 | 이전 양문 Blender 원본 | `Blender/ESS_Paired_Doors/ESS_Paired_Doors.blend` |
 | Blender 변환 스크립트 | `scripts/paired-doors.py` |
+| Cisco 디테일·케이블 재배치 | `scripts/cisco-face.mjs`, `scripts/cisco-detail.py`, `scripts/cisco-network-routes.py` |
+| 중앙 패널 배선 보강 | `scripts/center-wiring-detail.py` |
+| 랙 하단 BPU·팩 검정색 외장 | `scripts/bpu-face.mjs`, `scripts/rack-bpu.py` |
+| LCS 사진 외형·하단 LAN | `scripts/lcs-face.mjs`, `scripts/lcs-detail.py` |
+| LCS 상하 신호선 → 중앙 패널 덕트 | `scripts/lcs-signal-wiring.py` |
+| 보라색 네트워크 케이블 곡선 처리 | `scripts/purple-network-curves.py` |
+| eBSC 흰 랜선 곡선 처리 | `scripts/ebsc-lan-curves.py` |
+| 바깥쪽 랙 양문 앞 외함 기둥 제거 | `scripts/clear-rack-openings.py` |
 | 검증 | `tests/telemetry.test.ts`, `tests/verify.mjs` |
 
 `dist/`는 생성물입니다. 여기를 직접 고치지 말고 소스를 수정한 후 빌드합니다. Unity 씬은 별도 산출물로, 웹 변경이 자동 반영되지 않습니다.

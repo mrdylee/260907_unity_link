@@ -44,7 +44,7 @@ function focusPanelDevice(name:string,label:string):void {
  if(!model)return;showSelectedMarkers();model.setAll(true);
  const node=model.root.getObjectByName(name)!;
  const target=node.getWorldPosition(new THREE.Vector3());
- camera.position.copy(target).add(new THREE.Vector3(-.35,.12,name==='LCS_Controller' ? -1.1 : 1.1));
+ camera.position.copy(target).add(name==='LCS_Controller' ? new THREE.Vector3(-.45,.07,-.66) : new THREE.Vector3(-.35,.12,1.1));
  controls.target.copy(target);controls.update();status.textContent=label;
 }
 for(const [name,label] of [['Extended_Switch','Extended Switch'],['Network_Switch_IE3500','Switch'],['LCS_Controller','LCS']]){

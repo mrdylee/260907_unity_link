@@ -49,6 +49,7 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 ## 4. 현재 구현되어 있는 것
 
 - 동일한 컨테이너 6대, 3열 × 2행 배치. 각 컨테이너는 랙 6개·팩 42개·BPU 6개. 랙마다 검정색 팩 7개와 하단 BPU 1개.
+- 랙 1–2, 3–4, 5–6은 각 쌍의 가운데 틈이 없도록 가로 폭을 늘려 맞붙임. 높이·깊이와 쌍의 바깥 경계는 유지.
 - 전체 보기에서 컨테이너 본체·번호 라벨을 클릭하면 한 대를 확대하고 오른쪽 패널을 열어 해당 컨테이너 데이터로 변경.
 - 하단 메뉴로도 컨테이너 선택 가능. 상세 보기에서는 나머지 다섯 대를 숨김.
 - 랙 라벨·진단 카드 클릭은 랙 확대 + 해당 양문 열기 + 진단 말풍선 고정.
@@ -76,7 +77,7 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 | 문 동작·모델 복제 | `src/ESSModel.ts` |
 | 디자인·반응형 | `src/style.css` |
 | 웹 3D 모델 | `public/models/ess-container.glb` |
-| 최신 패널·환기구·eBSC·IE3500·랙 BPU·LCS Blender 원본 | `Blender/ESS_Clear_Rack_Openings/ESS_Clear_Rack_Openings.blend` |
+| 최신 패널·환기구·eBSC·IE3500·랙 BPU·LCS Blender 원본 | `Blender/ESS_Touching_Racks/ESS_Touching_Racks.blend` |
 | 이전 양문 Blender 원본 | `Blender/ESS_Paired_Doors/ESS_Paired_Doors.blend` |
 | Blender 변환 스크립트 | `scripts/paired-doors.py` |
 | Cisco 디테일·케이블 재배치 | `scripts/cisco-face.mjs`, `scripts/cisco-detail.py`, `scripts/cisco-network-routes.py` |
@@ -87,6 +88,7 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 | 보라색 네트워크 케이블 곡선 처리 | `scripts/purple-network-curves.py` |
 | eBSC 흰 랜선 곡선 처리 | `scripts/ebsc-lan-curves.py` |
 | 바깥쪽 랙 양문 앞 외함 기둥 제거 | `scripts/clear-rack-openings.py` |
+| 랙 세 쌍 가로 확장·밀착 | `scripts/touch-rack-pairs.py` |
 | 검증 | `tests/telemetry.test.ts`, `tests/verify.mjs` |
 
 `dist/`는 생성물입니다. 여기를 직접 고치지 말고 소스를 수정한 후 빌드합니다. Unity 씬은 별도 산출물로, 웹 변경이 자동 반영되지 않습니다.

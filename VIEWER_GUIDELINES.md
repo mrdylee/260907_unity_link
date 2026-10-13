@@ -194,4 +194,10 @@ eBSC 곡선 단계 원본은 `Blender/ESS_LAN_Curves/ESS_LAN_Curves.blend`입니
 
 사용자 요청에 따라 1–2번 및 5–6번 양문 구역 앞을 가리는 외함 기둥 `Door_Jamb_1`, `Door_Jamb_3`을 제거합니다. 랙 자체의 네 수직 프레임, 배터리 팩·BPU, 나머지 외함 기둥과 문 회전축은 유지합니다.
 
-최신 전체 원본은 `Blender/ESS_Clear_Rack_Openings/ESS_Clear_Rack_Openings.blend`입니다. `ESS_LAN_Curves.blend`와 해당 단계 GLB에서 `scripts/clear-rack-openings.py`를 한 번 실행합니다. 양문을 열어 두 개의 기둥이 보이지 않는지와 기존 개폐 동작을 확인합니다.
+기둥 제거 단계 원본은 `Blender/ESS_Clear_Rack_Openings/ESS_Clear_Rack_Openings.blend`입니다. `ESS_LAN_Curves.blend`와 해당 단계 GLB에서 `scripts/clear-rack-openings.py`를 한 번 실행합니다. 양문을 열어 두 개의 기둥이 보이지 않는지와 기존 개폐 동작을 확인합니다.
+
+### 랙 세 쌍 가로 확장·밀착
+
+R1–R2, R3–R4, R5–R6은 각 쌍의 가운데 간격 약 160mm를 없애도록 가로 폭을 늘립니다. 랙별 폭은 약 706.7mm에서 786.7mm로 약 11.3% 늘리고, 중심을 안쪽으로 40mm씩 옮깁니다. 쌍의 바깥 경계와 높이·깊이는 유지하고 팩·BPU·프레임은 해당 랙의 가로 확장을 함께 따릅니다. 수치는 실측 사양이 아닌 현재 목업의 형상 기준입니다.
+
+최신 전체 원본은 `Blender/ESS_Touching_Racks/ESS_Touching_Racks.blend`입니다. `ESS_Clear_Rack_Openings.blend`와 해당 단계 GLB에서 `scripts/touch-rack-pairs.py`를 실행합니다. 검증은 각 쌍 프레임 사이 간격, 기존 바깥 경계·높이·깊이 유지, 7팩·1BPU 구성 및 문 개폐를 확인합니다.

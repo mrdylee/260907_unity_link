@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DoorContact } from './DoorContact.ts';
 
 /** Exported glTF uses right-handed coordinates; angle signs differ from Unity. */
 const DOORS = [...Array.from({ length: 6 }, (_, i) => ({ name: `Door_Hinge_${String(i + 1).padStart(2, '0')}`, angle: i % 2 ? 105 : -105 })),
@@ -7,8 +8,9 @@ const DOORS = [...Array.from({ length: 6 }, (_, i) => ({ name: `Door_Hinge_${Str
 
 export class ESSModel {
   readonly root: THREE.Group;
-  private readonly doors: { node: THREE.Object3D; target: THREE.Quaternion; angle: number }[];
+  private readonly doors: { node: THREE.Object3D; target: THREE.Quaternion; requested: THREE.Quaternion; angle: number }[];
   private readonly closed = new THREE.Quaternion();
+  private readonly contacts = new Map<THREE.Object3D, DoorContact>();
   private readonly vents: { node: THREE.Object3D; target: THREE.Quaternion }[];
   private constructor(root: THREE.Group) {
     this.root = root;
@@ -20,8 +22,14 @@ export class ESSModel {
     this.doors = DOORS.map(({ name, angle }) => {
       const node = root.getObjectByName(name);
       if (!node) throw new Error(`Missing door: ${name}`);
-      return { node, angle, target: node.quaternion.clone() };
+      return { node, angle, target: node.quaternion.clone(), requested: node.quaternion.clone() };
     });
+    for (const [left, right] of [[1, 2], [3, 4]]) {
+      const nodes = [this.doors[left].node, this.doors[right].node];
+      const contact = new DoorContact(nodes[0], nodes[1]);
+      for (const node of nodes) this.contacts.set(node, contact);
+      for (const vent of this.vents) if (nodes.includes(vent.node.parent!)) this.contacts.set(vent.node, contact);
+    }
   }
   static async load(url: string): Promise<ESSModel> {
     const { scene } = await new GLTFLoader().loadAsync(url);
@@ -36,7 +44,21 @@ export class ESSModel {
   setDoor(name: string, open: boolean): void {
     const door = this.doors.find(d => d.node.name === name);
     if (!door) throw new Error(`Unknown door: ${name}`);
-    door.target.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, open ? THREE.MathUtils.degToRad(door.angle) : 0);
+    door.requested.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, open ? THREE.MathUtils.degToRad(door.angle) : 0);
+    door.target.copy(door.requested);
+    for (const [left, right] of [[1, 2], [3, 4]]) {
+      const first = this.doors[left], second = this.doors[right];
+      if (door !== first && door !== second) continue;
+      const neighbor = door === first ? second : first;
+      if (!open) {
+        // Closing releases contact, but must not restart the neighbor's opening.
+        if (neighbor.requested.angleTo(this.closed) > .01) neighbor.target.copy(neighbor.node.quaternion);
+      } else if (neighbor.requested.angleTo(this.closed) > .01) {
+        first.target.copy(first.requested);
+        second.target.copy(second.requested);
+        this.contacts.get(first.node)!.shareOpening(first.target, second.target);
+      }
+    }
   }
   setAll(open: boolean): void { for (const door of this.doors) this.setDoor(door.node.name, open); }
   toggleObject(object: THREE.Object3D): string | null {
@@ -49,7 +71,7 @@ export class ESSModel {
       }
       const door = this.doors.find(d => d.node === current);
       if (door) {
-        const open = door.target.angleTo(this.closed) < .01;
+        const open = door.requested.angleTo(this.closed) < .01;
         this.setDoor(door.node.name, open);
         if (door.node.name.startsWith('Door_Hinge_')) {
           const index = Number(door.node.name.slice(-2));
@@ -61,8 +83,19 @@ export class ESSModel {
     return null;
   }
   update(deltaSeconds: number): void {
-    for(const vent of this.vents)vent.node.quaternion.rotateTowards(vent.target,THREE.MathUtils.degToRad(90)*Math.min(deltaSeconds,.1));
-    for (const door of this.doors) door.node.quaternion.rotateTowards(door.target, THREE.MathUtils.degToRad(140) * Math.min(deltaSeconds, .1));
+    const delta = Math.max(0, Math.min(deltaSeconds, .1));
+    // Substeps keep thin door parts from tunneling, including after a slow frame.
+    const steps = Math.max(1, Math.ceil(140 * delta / .25));
+    for (let i = 0; i < steps; i++) {
+      for (const [joints, speed] of [[this.vents, 90], [this.doors, 140]] as const) {
+        for (const joint of joints) {
+          const step = THREE.MathUtils.degToRad(speed) * delta / steps;
+          const contact = this.contacts.get(joint.node);
+          if (contact) contact.move(joint.node, joint.target, step);
+          else joint.node.quaternion.rotateTowards(joint.target, step);
+        }
+      }
+    }
   }
   dispose(): void {
     const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>();

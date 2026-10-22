@@ -48,15 +48,20 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 
 ## 4. 현재 구현되어 있는 것
 
-- 동일한 컨테이너 6대, 3열 × 2행 배치. 각 컨테이너는 랙 6개·팩 42개·BPU 6개. 랙마다 검정색 팩 7개와 하단 BPU 1개.
+- 동일한 컨테이너 6대, 1·2 / 3·4번의 2×2 묶음과 5·6번 별도 한 쌍으로 배치. 각 컨테이너는 랙 6개·팩 42개·BPU 6개. 랙마다 검정색 팩 7개와 하단 BPU 1개.
 - 랙 1–2, 3–4, 5–6은 각 쌍의 가운데 틈이 없도록 가로 폭을 늘려 맞붙임. 높이·깊이와 쌍의 바깥 경계는 유지.
+- 각 쌍 외함 사이 빈 간격은 0.5ft(0.1524m). 짝수 컨테이너를 Y축 180도 회전해 E-panel이 양쪽 바깥을 향함. 4대 묶음의 두 줄 사이 2m, 별도 2대 묶음까지 4m 통로는 실측이 아닌 목업용 임시값. 전체 보기에는 두 그룹 구분선·라벨 표시.
+- 회전한 컨테이너의 랙·패널·장치 상세 카메라도 같은 방향으로 회전하며 컨테이너별 선택 데이터는 유지.
 - 전체 보기에서 컨테이너 본체·번호 라벨을 클릭하면 한 대를 확대하고 오른쪽 패널을 열어 해당 컨테이너 데이터로 변경.
 - 하단 메뉴로도 컨테이너 선택 가능. 상세 보기에서는 나머지 다섯 대를 숨김.
 - 랙 라벨·진단 카드 클릭은 랙 확대 + 해당 양문 열기 + 진단 말풍선 고정.
 - 랙 문은 1–2, 3–4, 5–6번이 한 쌍. 서로 반대 방향으로 바깥쪽 개폐. FACP는 앞문을 따라 움직임.
+- 이웃한 2–3번 및 4–5번 문은 문짝·경첩·손잡이·환기 덮개의 충돌 범위를 검사하고 접촉 직전에 정지. 두 문을 모두 열도록 요청하면 먼저 열린 문도 안전한 공통 각도로 물러나 두 문이 함께 열림. 상대 문을 닫으면 남은 문은 그 순간 각도를 유지하며, 다시 열기 요청을 해야 더 열림. 실제 질량·충격 해석은 아닌 시각화용 접촉 제약.
+- 랙 문 회전축은 경첩 원통 중심으로 25mm 보정. 닫힌 외형을 유지하면서 이웃 문 동시 개방은 약 59도, 바깥 1·6번은 105도. 문에 있던 노란 경고판 목업 6개는 제거함.
 - 1–2번 및 5–6번 양문을 열었을 때 앞을 가리던 외함 기둥 두 개를 제거함. 안쪽 랙 프레임과 나머지 기둥은 유지.
 - 환기 덮개는 1번 하단·2번 상단, 5번 하단·6번 상단의 네 개. 가운데 3·4번 문은 제외하며 덮개 클릭은 1–2 또는 5–6 쌍 개폐, 하단 버튼은 네 개 전체 개폐.
 - 오른쪽 진단 패널과 반투명 개별 말풍선. SOC·SOH·온도·전류·전압·STATE·진단 표시.
+- `Contactor 진단`은 BPU에 연결된 전용 말풍선에서 가상 이슈를 자동 재생함. 정상 비교·시간 이동·일시정지·통신 끊김을 지원하며 일반 진단과 겹치지 않음. 설명과 검증 범위는 [Contactor 진단 안내](docs/CONTACTOR_DIAGNOSTICS.md)를 참고.
 - LCS DS 상태와 eBSC 통신 정보. eBSC는 LAN 포트 4개 장치이며 주변 스위치와 구분.
 - LCS는 사용자 사진 기준의 얇은 검은 판형 본체, 위아래 녹색 단자대, 네 고정 나사, 하단 Ethernet과 전원선으로 구성. 오른쪽 흰 벽면에 밀착하며 사진의 임시 외부 배치는 재현하지 않음.
 - LCS 위쪽 녹색 단자선은 중앙 패널 상단 덕트로, 아래쪽 단자선은 하단 덕트로 이어짐. 가는 빨강·검정 곡선을 번갈아 배치하며 실제 HW/RS-485 핀 배정은 미확인.
@@ -71,13 +76,17 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 
 | 할 일 | 먼저 볼 파일 |
 |---|---|
-| 배치·카메라·클릭 | `src/main.ts` |
+| 전체 배치 계산·간격 | `src/ContainerLayout.ts` |
+| 카메라·클릭·그룹 표시 | `src/main.ts` |
 | 오른쪽 패널·말풍선·선택 데이터 갱신 | `src/diagnostics.ts` |
 | 데이터 타입·모의 값 | `src/telemetry.ts` |
+| Contactor 진단 말풍선·재생 | `src/contactorDiagnostics.ts` |
+| Contactor 가상 상태·시간 경계 | `src/contactor.ts`, `tests/contactor.test.ts` |
 | 문 동작·모델 복제 | `src/ESSModel.ts` |
+| 이웃한 랙 문 접촉 제한 | `src/DoorContact.ts` |
 | 디자인·반응형 | `src/style.css` |
 | 웹 3D 모델 | `public/models/ess-container.glb` |
-| 최신 패널·환기구·eBSC·IE3500·랙 BPU·LCS Blender 원본 | `Blender/ESS_Touching_Racks/ESS_Touching_Racks.blend` |
+| 최신 패널·환기구·eBSC·IE3500·랙 BPU·LCS Blender 원본 | `Blender/ESS_Clean_Doors/ESS_Clean_Doors.blend` |
 | 이전 양문 Blender 원본 | `Blender/ESS_Paired_Doors/ESS_Paired_Doors.blend` |
 | Blender 변환 스크립트 | `scripts/paired-doors.py` |
 | Cisco 디테일·케이블 재배치 | `scripts/cisco-face.mjs`, `scripts/cisco-detail.py`, `scripts/cisco-network-routes.py` |
@@ -89,6 +98,8 @@ ESS_TEST_URL=http://127.0.0.1:3006 npm test
 | eBSC 흰 랜선 곡선 처리 | `scripts/ebsc-lan-curves.py` |
 | 바깥쪽 랙 양문 앞 외함 기둥 제거 | `scripts/clear-rack-openings.py` |
 | 랙 세 쌍 가로 확장·밀착 | `scripts/touch-rack-pairs.py` |
+| 랙 문 회전축을 경첩 중심에 맞춤 | `scripts/align-door-hinges.py` |
+| 문 위 노란 경고판 제거 | `scripts/remove-door-warning-plates.py` |
 | 검증 | `tests/telemetry.test.ts`, `tests/verify.mjs` |
 
 `dist/`는 생성물입니다. 여기를 직접 고치지 말고 소스를 수정한 후 빌드합니다. Unity 씬은 별도 산출물로, 웹 변경이 자동 반영되지 않습니다.

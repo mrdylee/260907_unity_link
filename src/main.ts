@@ -2,8 +2,10 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ESSModel } from './ESSModel';
+import { arrangeContainers } from './ContainerLayout';
 import { formatRackLabel } from './telemetry';
 import { setupDiagnostics } from './diagnostics';
+import { setupContactorDiagnostics } from './contactorDiagnostics';
 import './style.css';
 
 document.querySelector('#app')!.innerHTML = `<main><header><div><span class="eyebrow">ENERGY STORAGE SYSTEM</span><h1>ESS 컨테이너 · 6대</h1><p>Blender v2 재질 · 인터랙티브 3D 목업</p></div><span class="badge">6 CONTAINERS · 36 RACKS</span></header><section id="viewport"><canvas></canvas><div id="loading">모델 불러오는 중…</div><div id="rack-markers"></div><div id="container-markers"></div><aside id="telemetry"><div class="telemetry-head"><div><span class="eyebrow">MODBUS TCP</span><h2>ESS 진단 정보</h2></div><span class="simulation">SIMULATION</span></div><p class="connection">● 장비 미연결 · 예시 데이터</p><div id="rack-cards"></div><h3 class="equipment-title">제어기 진단</h3><div id="equipment-cards"></div></aside><div class="view-tools"><button id="zoom-in" aria-label="확대">＋</button><button id="zoom-out" aria-label="축소">−</button><button id="fullscreen" aria-label="전체화면">⛶</button></div><div class="hint">드래그 회전 · 휠 확대 · 우클릭 이동 · 문 클릭</div></section><footer><div class="group"><button id="open">전체 열기</button><button id="close">전체 닫기</button></div><div class="group"><button id="home">6대 전체 보기</button><label class="container-picker">컨테이너 <select id="container-select" aria-label="컨테이너 선택"><option value="0">ESS 01</option><option value="1">ESS 02</option><option value="2">ESS 03</option><option value="3">ESS 04</option><option value="4">ESS 05</option><option value="5">ESS 06</option></select></label><button id="racks">배터리 랙</button><button id="panel">내부 패널</button><button id="ebsc">eBSC</button></div><span id="status" role="status">준비 중</span></footer></main>`;
@@ -16,6 +18,23 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.25;
 const scene = new THREE.Scene(); scene.background = new THREE.Color('#18232e');
+const contactorBox = new THREE.Box3();
+const contactorHighlight = new THREE.Box3Helper(contactorBox, 0xffbd67);
+const contactorHighlightMaterial = contactorHighlight.material as THREE.LineBasicMaterial;
+contactorHighlight.visible = false; contactorHighlightMaterial.depthTest = false; contactorHighlightMaterial.transparent = true; contactorHighlight.renderOrder = 10;
+scene.add(contactorHighlight);
+const contactorMarker = document.createElement('button');
+contactorMarker.className = 'rack-marker contactor-marker'; contactorMarker.hidden = true;
+contactorMarker.setAttribute('aria-label', '선택한 BPU 진단 다시 재생'); viewport.append(contactorMarker);
+let contactorAnchor: THREE.Vector3 | undefined;
+let contactorCamera: { position: THREE.Vector3; target: THREE.Vector3; endPosition: THREE.Vector3; endTarget: THREE.Vector3; start: number } | undefined;
+function frameDiagnosis(): void {
+ camera.clearViewOffset();
+ const panel=document.querySelector<HTMLElement>('#contactor-diagnostics');
+ if(!panel||panel.hidden)return;
+ const {width,height}=viewport.getBoundingClientRect();
+ camera.setViewOffset(width,height,width>680?Math.min(150,width*.18):0,width>680?0:Math.min(190,height*.25),width,height);
+}
 const environment = new RoomEnvironment();
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(environment).texture;
@@ -24,27 +43,40 @@ scene.add(new THREE.HemisphereLight(0xe8f4ff, 0x657075, 2.6));
 for (const [x,y,z,power] of [[-5,8,6,3.2],[5,3,-5,1.8],[-6,3,-1,2]]) {const light = new THREE.DirectionalLight(0xffffff,power);light.position.set(x,y,z);scene.add(light);}
 const camera = new THREE.PerspectiveCamera(40, 1, .01, 100);
 const controls = new OrbitControls(camera, canvas); controls.enableDamping = true; controls.minDistance = .22; controls.maxDistance = 80; controls.maxPolarAngle = Math.PI*.95;
-function view(position: THREE.Vector3, target: THREE.Vector3): void { const offset=model?.root.position ?? new THREE.Vector3(); camera.position.copy(position).add(offset); controls.target.copy(target).add(offset); controls.update(); }
-function home(): void { models.forEach(item=>item.root.visible=true);document.querySelector<HTMLElement>("#container-markers")!.style.display="block";camera.position.set(-18,20,27); controls.target.set(0,0.8,0); controls.update(); document.querySelector<HTMLElement>("#rack-markers")!.style.display="none"; status.textContent="컨테이너 6대 · 3열 × 2행 · 컨테이너를 선택해 상세 보기"; }
-new ResizeObserver(() => {const {width,height}=viewport.getBoundingClientRect();renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();}).observe(viewport);
+controls.addEventListener('start',()=>{contactorCamera=undefined;});
+function view(position: THREE.Vector3, target: THREE.Vector3): void { if(!model)return; camera.position.copy(model.root.localToWorld(position)); controls.target.copy(model.root.localToWorld(target)); controls.update(); }
+function home(): void {
+ models.forEach(item=>item.root.visible=true);groupOutlines.visible=true;
+ document.querySelector<HTMLElement>('#container-markers')!.style.display='block';
+ const center=layoutBounds.getCenter(new THREE.Vector3()),size=layoutBounds.getSize(new THREE.Vector3());
+ const distance=size.length()/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*Math.min(1,camera.aspect))*1.15;
+ camera.position.copy(center).add(new THREE.Vector3(-.9,1.1,1.35).normalize().multiplyScalar(distance));
+ controls.target.copy(center);controls.update();
+ document.querySelector<HTMLElement>('#rack-markers')!.style.display='none';
+ status.textContent='4대(2×2) + 2대 · 쌍 간격 0.5ft · E-panel 바깥 방향';
+}
+new ResizeObserver(() => {const {width,height}=viewport.getBoundingClientRect();renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();frameDiagnosis();}).observe(viewport);
 let model: ESSModel | undefined;
 const models: ESSModel[] = [];
-const containerMarkers: { element: HTMLButtonElement; anchor: THREE.Vector3 }[] = [];
+const containerMarkers: { element: HTMLElement; anchor: THREE.Vector3 }[] = [];
+let layoutBounds=new THREE.Box3();
+const groupOutlines=new THREE.Group();scene.add(groupOutlines);
 const sceneMarkers: { element: HTMLButtonElement; anchor: THREE.Vector3 }[] = [];
 function createRackMarkers():void {
  const layer=document.querySelector<HTMLElement>('#rack-markers')!;layer.replaceChildren();sceneMarkers.length=0;const racks=model?.root.getObjectByName('Internal_Battery_Racks');if(!racks)return;
  racks.children.forEach((rack,index)=>{const box=new THREE.Box3().setFromObject(rack);const anchor=new THREE.Vector3((box.min.x+box.max.x)/2,box.max.y+.16,(box.min.z+box.max.z)/2);const element=document.createElement('button');element.className='rack-marker';element.dataset.rack=String(index+1);element.textContent=formatRackLabel(index+1);layer.append(element);sceneMarkers.push({element,anchor});});
  for(const [id,nodeName] of [['LCS','LCS_Controller'],['eBSC','eBSC_Controller']] as const){const node=model?.root.getObjectByName(nodeName);if(!node)continue;const box=new THREE.Box3().setFromObject(node);const anchor=new THREE.Vector3((box.min.x+box.max.x)/2,(box.min.y+box.max.y)/2,(box.min.z+box.max.z)/2);const element=document.createElement('button');element.className='rack-marker equipment-marker';element.dataset.equipment=id;element.textContent=id;layer.append(element);sceneMarkers.push({element,anchor});}
 }
-function showSelectedMarkers():void {models.forEach(item=>item.root.visible=item===model);document.querySelector<HTMLElement>('#container-markers')!.style.display='none';document.querySelector<HTMLElement>('#rack-markers')!.style.display='block';}
+function showSelectedMarkers():void {groupOutlines.visible=false;models.forEach(item=>item.root.visible=item===model);document.querySelector<HTMLElement>('#container-markers')!.style.display='none';document.querySelector<HTMLElement>('#rack-markers')!.style.display='block';}
 const ventButton=document.createElement('button');ventButton.textContent='환기구 열기/닫기';
 ventButton.addEventListener('click',()=>{if(!model)return;const open=model.toggleVents();status.textContent=`환기 덮개 4개 ${open?'열림':'닫힘'} · 선택 컨테이너`;});
 document.querySelector('#close')!.after(ventButton);
 function focusPanelDevice(name:string,label:string):void {
+ document.dispatchEvent(new Event('contactorclose-request'));
  if(!model)return;showSelectedMarkers();model.setAll(true);
  const node=model.root.getObjectByName(name)!;
  const target=node.getWorldPosition(new THREE.Vector3());
- camera.position.copy(target).add(name==='LCS_Controller' ? new THREE.Vector3(-.45,.07,-.66) : new THREE.Vector3(-.35,.12,1.1));
+ camera.position.copy(target).add(name==='LCS_Controller' ? new THREE.Vector3(-.45,.07,-.66).applyQuaternion(model.root.quaternion) : new THREE.Vector3(-.35,.12,1.1).applyQuaternion(model.root.quaternion));
  controls.target.copy(target);controls.update();status.textContent=label;
 }
 for(const [name,label] of [['Extended_Switch','Extended Switch'],['Network_Switch_IE3500','Switch'],['LCS_Controller','LCS']]){
@@ -63,7 +95,34 @@ function selectContainer(index:number):void {
 }
 document.querySelector('#container-select')!.addEventListener('change',event=>selectContainer(Number((event.target as HTMLSelectElement).value)));
 void setupDiagnostics();
+const contactorUi = setupContactorDiagnostics();
+document.addEventListener('contactorfocus', event => {
+ const {rackId,diagnosis,focus}=(event as CustomEvent<{rackId:number;diagnosis:string;focus:boolean}>).detail;
+ const bpu=model?.root.getObjectByName(`BPU_${String(rackId).padStart(2,'0')}`);
+ if(!model||!bpu)return;
+ showSelectedMarkers();
+ const first=rackId%2?rackId:rackId-1;
+ for(const id of [first,first+1])model.setDoor(`Door_Hinge_${String(id).padStart(2,'0')}`,true);
+ contactorBox.setFromObject(bpu).expandByScalar(.025);
+ contactorHighlight.visible=true;
+ contactorHighlightMaterial.color.set(diagnosis==='mismatch'?0xffbd67:diagnosis==='unknown'?0xa3b5c2:0x75d9cf);
+ contactorAnchor=contactorBox.getCenter(new THREE.Vector3());contactorAnchor.y=contactorBox.max.y+.12;
+ contactorMarker.textContent=`${formatRackLabel(rackId)} · K+`;
+ contactorMarker.dataset.diagnosis=diagnosis;
+ document.querySelectorAll<HTMLElement>('.rack-marker[data-rack]').forEach(marker=>marker.classList.toggle('selected',Number(marker.dataset.rack)===rackId));
+ frameDiagnosis();
+ if(focus){
+  const target=contactorBox.getCenter(new THREE.Vector3());target.y+=.2;
+  const endPosition=target.clone().add(new THREE.Vector3(0,.3,3.6).applyQuaternion(model.root.quaternion));
+  if(reducedMotion){camera.position.copy(endPosition);controls.target.copy(target);controls.update();}
+  else contactorCamera={position:camera.position.clone(),target:controls.target.clone(),endPosition,endTarget:target,start:performance.now()};
+ }
+ status.textContent=`ESS ${models.indexOf(model)+1} · ${formatRackLabel(rackId)} · Contactor 진단 · 가상 시연`;
+});
+document.addEventListener('contactorclose',()=>{contactorCamera=undefined;contactorHighlight.visible=false;contactorAnchor=undefined;contactorMarker.hidden=true;document.querySelectorAll('.rack-marker.selected').forEach(marker=>marker.classList.remove('selected'));frameDiagnosis();});
+contactorMarker.addEventListener('click',()=>document.querySelector<HTMLButtonElement>('#contactor-issue')!.click());
 document.addEventListener('rackfocus', event => {
+ if(viewport.classList.contains('contactor-mode'))return;
  const rackId=(event as CustomEvent<number>).detail;
  const rack=model?.root.getObjectByName('Internal_Battery_Racks')?.children[rackId-1];
  if(!model||!rack)return;
@@ -74,7 +133,7 @@ document.addEventListener('rackfocus', event => {
  const target=box.getCenter(new THREE.Vector3());
  const size=box.getSize(new THREE.Vector3());
  const distance=Math.max(size.y,size.x/camera.aspect)/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.55;
- camera.position.copy(target).add(new THREE.Vector3(0,.15,distance));
+ camera.position.copy(target).add(new THREE.Vector3(0,.15,distance).applyQuaternion(model.root.quaternion));
  controls.target.copy(target);controls.update();
  status.textContent=`ESS ${models.indexOf(model)+1} · ${formatRackLabel(rackId)} 확대 · 배터리 랙 버튼으로 복귀`;
 });
@@ -94,11 +153,33 @@ on('zoom-in',()=>zoom(.8));on('zoom-out',()=>zoom(1.25));
 on('fullscreen',()=>{if(document.fullscreenElement)void document.exitFullscreen();else void document.documentElement.requestFullscreen().catch(()=>{status.textContent='이 브라우저에서는 전체화면을 사용할 수 없습니다.';});});
 on('racks',()=>{showSelectedMarkers();model?.setAll(true);view(new THREE.Vector3(2.5,3.8,9.5),new THREE.Vector3(0,1.35,0));status.textContent='랙 6개 · 각 7팩';});
 on('panel',()=>{showSelectedMarkers();model?.setAll(true);view(new THREE.Vector3(-6.4,1.8,.3),new THREE.Vector3(-2.5,1.12,.3));status.textContent='내부 장비와 문 안쪽 FACP';});
-on('ebsc',()=>{if(!model)return;showSelectedMarkers();model.setAll(true);const node=model.root.getObjectByName('eBSC_Controller')!;const target=node.getWorldPosition(new THREE.Vector3());camera.position.copy(target).add(new THREE.Vector3(-.3,.06,1.1));controls.target.copy(target);controls.update();status.textContent='eBSC · LAN 포트 4개';});
-let previous=performance.now();renderer.setAnimationLoop(time=>{const dt=(time-previous)/1000;previous=time;models.forEach(item=>item.update(dt));controls.update();renderer.render(scene,camera);const {width,height}=viewport.getBoundingClientRect();for(const marker of [...sceneMarkers,...containerMarkers]){const point=marker.anchor.clone().project(camera);marker.element.hidden=point.z < -1 || point.z > 1;marker.element.style.transform=`translate(${(point.x*.5+.5)*width}px,${(-point.y*.5+.5)*height}px) translate(-50%,-50%)`;}});
+on('ebsc',()=>{if(!model)return;showSelectedMarkers();model.setAll(true);const node=model.root.getObjectByName('eBSC_Controller')!;const target=node.getWorldPosition(new THREE.Vector3());camera.position.copy(target).add(new THREE.Vector3(-.3,.06,1.1).applyQuaternion(model.root.quaternion));controls.target.copy(target);controls.update();status.textContent='eBSC · LAN 포트 4개';});
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let previous=performance.now();renderer.setAnimationLoop(time=>{const dt=(time-previous)/1000;previous=time;models.forEach(item=>item.update(dt));if(contactorCamera){const t=Math.min(1,(time-contactorCamera.start)/650),e=t*t*(3-2*t);camera.position.lerpVectors(contactorCamera.position,contactorCamera.endPosition,e);controls.target.lerpVectors(contactorCamera.target,contactorCamera.endTarget,e);if(t===1)contactorCamera=undefined;}controls.update();contactorHighlightMaterial.opacity=contactorMarker.dataset.diagnosis==='mismatch'&&!reducedMotion ? .7+Math.sin(time*.004)*.2 : .8;renderer.render(scene,camera);const {width,height}=viewport.getBoundingClientRect();for(const marker of [...sceneMarkers,...containerMarkers,...(contactorAnchor?[{element:contactorMarker,anchor:contactorAnchor}]:[])]){const point=marker.anchor.clone().project(camera);marker.element.hidden=point.z < -1 || point.z > 1;const x=(point.x*.5+.5)*width,y=(-point.y*.5+.5)*height;marker.element.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%)`;if(marker.element===contactorMarker)contactorUi.position(x,y);}});
 async function loadModel():Promise<void>{
-try {model=await ESSModel.load('./models/ess-container.glb');for(let index=0;index<6;index++){const instance=index===0?model:model.clone();instance.root.position.set((index%3-1)*8.5,0,(Math.floor(index/3)-.5)*7);instance.root.name=`ESS_${index+1}`;models.push(instance);scene.add(instance.root);instance.root.updateMatrixWorld(true);const element=document.createElement('button');element.className='container-marker';element.textContent=`ESS ${String(index+1).padStart(2,'0')}`;element.addEventListener('click',()=>selectContainer(index));document.querySelector('#container-markers')!.append(element);containerMarkers.push({element,anchor:instance.root.position.clone().add(new THREE.Vector3(0,3.5,0))});}createRackMarkers();document.getElementById('loading')!.remove();home();}
+try {
+ model=await ESSModel.load('./models/ess-container.glb');
+ for(let index=0;index<6;index++){
+  const instance=index===0?model:model.clone();
+  instance.root.name=`ESS_${index+1}`;models.push(instance);scene.add(instance.root);
+ }
+ layoutBounds=arrangeContainers(models.map(instance=>instance.root));
+ models.forEach((instance,index)=>{
+  const element=document.createElement('button');element.className='container-marker';element.textContent=`ESS ${String(index+1).padStart(2,'0')}`;
+  element.addEventListener('click',()=>selectContainer(index));document.querySelector('#container-markers')!.append(element);
+  const center=new THREE.Box3().setFromObject(instance.root).getCenter(new THREE.Vector3());center.y=3.5;
+  containerMarkers.push({element,anchor:center});
+ });
+ for(const [indices,label] of [[[0,1,2,3],'4대 묶음 · LINK 01–04'],[[4,5],'2대 묶음 · LINK 05–06']] as const){
+  const box=new THREE.Box3();indices.forEach(index=>box.union(new THREE.Box3().setFromObject(models[index].root)));
+  const points=[[box.min.x-.3,box.min.z-.3],[box.max.x+.3,box.min.z-.3],[box.max.x+.3,box.max.z+.3],[box.min.x-.3,box.max.z+.3]].map(([x,z])=>new THREE.Vector3(x,.02,z));
+  groupOutlines.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:0x69aeb0,transparent:true,opacity:.6})));
+  const element=document.createElement('span');element.className='container-group-marker';element.textContent=label;
+  document.querySelector('#container-markers')!.append(element);
+  containerMarkers.push({element,anchor:new THREE.Vector3(box.getCenter(new THREE.Vector3()).x,.1,box.max.z+.8)});
+ }
+ createRackMarkers();document.getElementById('loading')!.remove();home();document.dispatchEvent(new Event('modelready'));
+}
 catch(error){document.getElementById('loading')!.textContent='모델을 불러오지 못했습니다. 서버 주소로 접속했는지 확인하세요.';console.error(error);}
-
 }
 void loadModel();

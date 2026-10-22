@@ -1,0 +1,2 @@
+# Bundled Three.js shader strings retain upstream whitespace; check authored sources.
+dist/assets/*.js -whitespace

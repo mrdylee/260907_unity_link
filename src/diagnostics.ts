@@ -45,6 +45,10 @@ export async function setupDiagnostics(): Promise<void> {
     popup.style.left = `${left}px`; popup.style.top = `${top}px`;
   }
   function show(target: HTMLElement, pin: boolean): void {
+    if (viewport.classList.contains('contactor-mode')) {
+      if (pin && target.dataset.rack) document.dispatchEvent(new CustomEvent('rackfocus', { detail: Number(target.dataset.rack) }));
+      return;
+    }
     clearTimeout(timer);
     if (pinned && !pin) return;
     const rack = racks.find(item => String(item.rackId) === target.dataset.rack);
@@ -83,7 +87,8 @@ export async function setupDiagnostics(): Promise<void> {
     racks = nextRacks; equipment = nextEquipment;
     renderCards(); markWarnings();
   });
-  toggle.addEventListener('click', () => { panel.hidden = !panel.hidden; toggle.setAttribute('aria-expanded', String(!panel.hidden)); toggle.classList.toggle('selected', !panel.hidden); position(); });
+  toggle.addEventListener('click', () => { document.dispatchEvent(new Event('contactorclose-request')); panel.hidden = !panel.hidden; toggle.setAttribute('aria-expanded', String(!panel.hidden)); toggle.classList.toggle('selected', !panel.hidden); position(); });
+  document.addEventListener('diagnosticsclose', () => { dismiss(); panel.hidden = true; toggle.setAttribute('aria-expanded', 'false'); toggle.classList.remove('selected'); });
   const observer = new MutationObserver(position);
   observer.observe(document.querySelector('#rack-markers')!, { subtree: true, attributes: true, attributeFilter: ['style'] });
   new ResizeObserver(position).observe(viewport);

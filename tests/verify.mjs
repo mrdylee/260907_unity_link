@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
+import { OBB } from 'three/addons/math/OBB.js';
 import { ESSModel } from '../src/ESSModel.ts';
+import { arrangeContainers } from '../src/ContainerLayout.ts';
 // Decode embedded glTF images in Node; rendering is verified separately in the browser.
 const { createCanvas, loadImage } = await import('@napi-rs/canvas');
 globalThis.self = globalThis;
@@ -9,6 +11,12 @@ globalThis.createImageBitmap = async blob => { const img = await loadImage(Buffe
 globalThis.ProgressEvent = class { constructor(type, values) { this.type=type;Object.assign(this,values); } };
 const model=await ESSModel.load(`${process.env.ESS_TEST_URL || 'http://127.0.0.1:3006'}/models/ess-container.glb`);
 const root=model.root;
+for(let number=1;number<=6;number++){
+ const door=root.getObjectByName(`Door_Hinge_0${number}`);
+ const barrels=door.children.filter(node=>node.name.startsWith('Hinge_Barrel'));
+ assert.equal(barrels.length,3);
+ for(const barrel of barrels)assert.ok(Math.hypot(barrel.position.x,barrel.position.z)<1e-6,'Door pivot must run through the visible hinge barrel centers');
+}
 const ventNodes=[];root.traverse(n=>{if(n.name.startsWith('Vent_Hinge_'))ventNodes.push(n);});
 assert.equal(ventNodes.length,4,'Four covers on the outer double doors');
 const ventDoorNumbers=[1,2,5,6];
@@ -191,8 +199,34 @@ let count=0;root.traverse(n=>{if(/^Battery_Module_\d/.test(n.name))count++;});as
 const side=root.getObjectByName('Side_Access_Doors');assert.equal(side.children.length,6);
 const facp=root.getObjectByName('FACP_Inside_Door');assert.equal(facp.parent.name,'Front_Left_Hinge');
 root.updateMatrixWorld(true);const rackPosition=racks.children[0].getWorldPosition(new THREE.Vector3());const facpClosed=facp.getWorldPosition(new THREE.Vector3());
-model.setAll(true);for(let i=0;i<100;i++)model.update(1/60);root.updateMatrixWorld(true);
-for(const door of side.children)assert.ok(door.quaternion.angleTo(new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP,THREE.MathUtils.degToRad(Number(door.name.slice(-2))%2 ? -105 : 105)))<1e-5);
+// Independent per-mesh collision oracle, including negative-scale right doors.
+function doorBoxes(door){
+ const boxes=[];door.updateWorldMatrix(true,true);
+ door.traverse(mesh=>{
+  if(!(mesh instanceof THREE.Mesh))return;
+  mesh.geometry.computeBoundingBox();
+  const local=mesh.geometry.boundingBox, matrix=mesh.matrixWorld;
+  const axes=[0,1,2].map(i=>new THREE.Vector3().setFromMatrixColumn(matrix,i));
+  const size=local.getSize(new THREE.Vector3()).multiplyScalar(.5);
+  size.multiply(new THREE.Vector3(...axes.map(axis=>axis.length())));
+  const rotation=new THREE.Matrix3().setFromMatrix4(new THREE.Matrix4().makeBasis(...axes.map(axis=>axis.normalize())));
+  boxes.push(new OBB(local.getCenter(new THREE.Vector3()).applyMatrix4(matrix),size,rotation));
+ });return boxes;
+}
+function assertNoDoorOverlap(instance=model){
+ for(const [a,b] of [[2,3],[4,5]]){
+  const first=doorBoxes(instance.root.getObjectByName(`Door_Hinge_0${a}`));
+  const second=doorBoxes(instance.root.getObjectByName(`Door_Hinge_0${b}`));
+  assert.ok(!first.some(x=>second.some(y=>x.intersectsOBB(y))),`Rack ${a}/${b} door meshes must not intersect during motion`);
+ }
+}
+model.setAll(true);
+for(let i=0;i<100;i++){model.update(1/60);assertNoDoorOverlap();}
+root.updateMatrixWorld(true);
+for(const door of side.children){
+ const number=Number(door.name.slice(-2)),angle=THREE.MathUtils.radToDeg(door.quaternion.angleTo(new THREE.Quaternion()));
+ assert.ok(number===1||number===6 ? Math.abs(angle-105)<1e-5 : angle>55&&angle<105,`Door ${number} angle ${angle}: adjacent doors open widely before contact; outer doors open 105 degrees`);
+}
 assert.ok(facp.getWorldPosition(new THREE.Vector3()).distanceTo(facpClosed)>.1);
 assert.ok(racks.children[0].getWorldPosition(new THREE.Vector3()).distanceTo(rackPosition)<1e-8);
 model.setAll(false);for(let i=0;i<100;i++)model.update(1/60);
@@ -218,5 +252,84 @@ for(const index of [0,2,4]){
  model.toggleObject(left);for(let i=0;i<100;i++)model.update(1/60);
  assert.ok(left.quaternion.angleTo(new THREE.Quaternion())<1e-5 && right.quaternion.angleTo(new THREE.Quaternion())<1e-5);
 }
+// Frame-by-frame assertions cover commands used by buttons and direct door clicks.
+const settle=(instance,dt=1/60)=>{for(let i=0;i<110;i++){instance.update(dt);assertNoDoorOverlap(instance);}};
+const settleHolding=(instance,nodes)=>{
+ const poses=nodes.map(node=>node.quaternion.clone());
+ for(let i=0;i<110;i++){
+  instance.update(1/60);assertNoDoorOverlap(instance);
+  nodes.forEach((node,index)=>assert.ok(node.quaternion.angleTo(poses[index])<1e-6,`${node.name} must stay at its current angle when its neighbor closes`));
+ }
+};
+for(const [first,second] of [[2,3],[3,2],[4,5],[5,4]]){
+ model.setAll(false);settle(model);
+ model.setDoor(`Door_Hinge_0${first}`,true);settle(model);
+ model.setDoor(`Door_Hinge_0${second}`,true);settle(model);
+ const stopped=root.getObjectByName(`Door_Hinge_0${second}`).quaternion.angleTo(new THREE.Quaternion());
+ const firstAngle=root.getObjectByName(`Door_Hinge_0${first}`).quaternion.angleTo(new THREE.Quaternion());
+ assert.ok(stopped>THREE.MathUtils.degToRad(55) && firstAngle>THREE.MathUtils.degToRad(55),`Doors ${first}/${second} must both open widely after sequential requests`);
+ assert.ok(Math.abs(firstAngle-stopped)<THREE.MathUtils.degToRad(.5),'Both requested doors share the available opening instead of locking the second');
+ assert.ok(stopped<THREE.MathUtils.degToRad(104),'Second door waits at the occupied boundary');
+ const held=root.getObjectByName(`Door_Hinge_0${second}`);
+ model.setDoor(`Door_Hinge_0${first}`,false);settleHolding(model,[held]);
+ assert.ok(root.getObjectByName(`Door_Hinge_0${first}`).quaternion.angleTo(new THREE.Quaternion())<1e-5,'Closing is not trapped by the waiting door');
+ model.setDoor('Front_Left_Hinge',true);settleHolding(model,[held]);
+ model.setDoor(`Door_Hinge_0${second}`,true);settle(model);
+ assert.ok(held.quaternion.angleTo(new THREE.Quaternion())>stopped+.01,'The held door opens further only after an explicit opening request');
+}
+// Reproduce the UI's paired door clicks in both directions.
+for(const [first,second] of [[2,3],[3,2],[4,5],[5,4]]){
+ model.setAll(false);settle(model);
+ model.toggleObject(root.getObjectByName(`Door_Hinge_0${first}`));settle(model);
+ model.toggleObject(root.getObjectByName(`Door_Hinge_0${second}`));settle(model);
+ for(const id of [first,second])assert.ok(root.getObjectByName(`Door_Hinge_0${id}`).quaternion.angleTo(new THREE.Quaternion())>THREE.MathUtils.degToRad(20),'Paired clicks open both requested neighboring leaves');
+ const held=[first,first%2?first+1:first-1].map(id=>root.getObjectByName(`Door_Hinge_0${id}`));
+ model.toggleObject(root.getObjectByName(`Door_Hinge_0${second}`));settleHolding(model,held);
+ assert.ok(root.getObjectByName(`Door_Hinge_0${second}`).quaternion.angleTo(new THREE.Quaternion())<1e-5,'Click still closes a contact-limited requested door');
+}
+for(const [first,second] of [[2,3],[3,2],[4,5],[5,4]])for(const closing of [first,second]){
+ model.setAll(false);settle(model);
+ model.setDoor(`Door_Hinge_0${first}`,true);settle(model);
+ model.setDoor(`Door_Hinge_0${second}`,true);for(let i=0;i<10;i++){model.update(1/60);assertNoDoorOverlap();}
+ const held=root.getObjectByName(`Door_Hinge_0${closing===first?second:first}`);
+ model.setDoor(`Door_Hinge_0${closing}`,false);settleHolding(model,[held]);
+ assert.ok(root.getObjectByName(`Door_Hinge_0${closing}`).quaternion.angleTo(new THREE.Quaternion())<1e-5,'A reversal during the shared-opening transition closes normally');
+}
+model.setAll(false);settle(model);
+model.setAll(true);settle(model,.5); // Delayed frames must not tunnel.
+model.setAll(false);settle(model,.1);
+for(const door of side.children)assert.ok(door.quaternion.angleTo(new THREE.Quaternion())<1e-5,'Every door can close after contact');
+model.toggleVents();settle(model);
+model.setAll(true);settle(model);
+model.toggleVents();settle(model);
+model.setAll(false);settle(model);
+model.setAll(true);for(let i=0;i<15;i++){model.update(1/60);assertNoDoorOverlap();}
+model.setAll(false);settle(model);
+const moved=copies[0];moved.root.position.set(8.5,0,-7);moved.root.rotation.y=.35;
+moved.setAll(true);settle(moved);
+for(const copy of copies.slice(1))assert.ok(copy.root.getObjectByName('Door_Hinge_02').quaternion.angleTo(new THREE.Quaternion())<1e-5,'Contact state is independent per container');
+console.log('PASS: adjacent 2/3 and 4/5 mesh separation, either opening order and paired clicks, shared opening, independent closing, explicit reopening, reversal, large frames, vents and transformed clone.');
+const site=Array.from({length:6},()=>model.clone());
+arrangeContainers(site.map(instance=>instance.root));
+const closedBodies=site.map(instance=>new THREE.Box3().setFromObject(instance.root));
+for(const first of [0,2,4]){
+ const left=closedBodies[first],right=closedBodies[first+1];
+ assert.ok(Math.abs(right.min.x-left.max.x-.1524)<1e-6,'Paired LINK outer surfaces have a 0.5ft clear gap');
+ assert.ok(Math.abs(left.getCenter(new THREE.Vector3()).z-right.getCenter(new THREE.Vector3()).z)<1e-6,'Each pair aligns along the same row');
+ for(const index of [first,first+1]){
+  const instance=site[index],body=closedBodies[index];
+  const panel=instance.root.getObjectByName('Front_Left_Hinge').getWorldPosition(new THREE.Vector3());
+  assert.ok(index%2 ? panel.x>body.max.x-.6 : panel.x<body.min.x+.6,'E-panel faces the outside of the pair');
+ }
+}
+assert.ok(Math.abs(closedBodies[2].min.z-closedBodies[0].max.z-2)<1e-6,'Four-unit group keeps the provisional 2m service passage');
+assert.ok(Math.abs(closedBodies[4].min.z-closedBodies[2].max.z-4)<1e-6,'Separate two-unit group has a wider 4m passage');
+site.forEach(instance=>instance.setAll(true));
+for(let frame=0;frame<110;frame++){
+ site.forEach(instance=>instance.update(1/60));
+ const bodies=site.map(instance=>new THREE.Box3().setFromObject(instance.root));
+ for(let i=0;i<6;i++)for(let j=i+1;j<6;j++)assert.ok(!bodies[i].intersectsBox(bodies[j]),`LINK ${i+1}/${j+1} must not intersect while E-panel and rack doors open`);
+}
+console.log('PASS: 4+2 LINK grouping, 0.5ft paired gaps, outward E-panels and independent full-door clearance.');
 model.dispose();
 console.log('PASS: 6 racks / 42 packs / 8 door hierarchy, opening and closing, three outward door pairs, six independent containers, FACP follows hinge, racks stationary.');

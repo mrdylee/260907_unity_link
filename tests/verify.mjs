@@ -225,7 +225,7 @@ for(let i=0;i<100;i++){model.update(1/60);assertNoDoorOverlap();}
 root.updateMatrixWorld(true);
 for(const door of side.children){
  const number=Number(door.name.slice(-2)),angle=THREE.MathUtils.radToDeg(door.quaternion.angleTo(new THREE.Quaternion()));
- assert.ok(number===1||number===6 ? Math.abs(angle-105)<1e-5 : angle>55&&angle<105,`Door ${number} angle ${angle}: adjacent doors open widely before contact; outer doors open 105 degrees`);
+ assert.ok(number===1||number===6 ? Math.abs(angle-105)<1e-5 : angle>80&&angle<90,`Door ${number} angle ${angle}: adjacent doors must open beyond 80 degrees before contact; outer doors open 105 degrees`);
 }
 assert.ok(facp.getWorldPosition(new THREE.Vector3()).distanceTo(facpClosed)>.1);
 assert.ok(racks.children[0].getWorldPosition(new THREE.Vector3()).distanceTo(rackPosition)<1e-8);
@@ -267,7 +267,7 @@ for(const [first,second] of [[2,3],[3,2],[4,5],[5,4]]){
  model.setDoor(`Door_Hinge_0${second}`,true);settle(model);
  const stopped=root.getObjectByName(`Door_Hinge_0${second}`).quaternion.angleTo(new THREE.Quaternion());
  const firstAngle=root.getObjectByName(`Door_Hinge_0${first}`).quaternion.angleTo(new THREE.Quaternion());
- assert.ok(stopped>THREE.MathUtils.degToRad(55) && firstAngle>THREE.MathUtils.degToRad(55),`Doors ${first}/${second} must both open widely after sequential requests`);
+ assert.ok(stopped>THREE.MathUtils.degToRad(80) && firstAngle>THREE.MathUtils.degToRad(80),`Doors ${first}/${second} must both open beyond 80 degrees after sequential requests`);
  assert.ok(Math.abs(firstAngle-stopped)<THREE.MathUtils.degToRad(.5),'Both requested doors share the available opening instead of locking the second');
  assert.ok(stopped<THREE.MathUtils.degToRad(104),'Second door waits at the occupied boundary');
  const held=root.getObjectByName(`Door_Hinge_0${second}`);

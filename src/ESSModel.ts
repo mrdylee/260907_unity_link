@@ -4,16 +4,18 @@ import { DoorContact } from './DoorContact.ts';
 
 /** Exported glTF uses right-handed coordinates; angle signs differ from Unity. */
 const DOORS = [...Array.from({ length: 6 }, (_, i) => ({ name: `Door_Hinge_${String(i + 1).padStart(2, '0')}`, angle: i % 2 ? 105 : -105 })),
-  { name: 'Front_Left_Hinge', angle: 100 }, { name: 'Front_Right_Hinge', angle: -100 }];
+  { name: 'Front_Left_Hinge', angle: 90 }, { name: 'Front_Right_Hinge', angle: -90 }];
 
 export class ESSModel {
   readonly root: THREE.Group;
+  readonly panelSide: 'left' | 'right';
   private readonly doors: { node: THREE.Object3D; target: THREE.Quaternion; requested: THREE.Quaternion; angle: number }[];
   private readonly closed = new THREE.Quaternion();
   private readonly contacts = new Map<THREE.Object3D, DoorContact>();
   private readonly vents: { node: THREE.Object3D; target: THREE.Quaternion }[];
-  private constructor(root: THREE.Group) {
+  private constructor(root: THREE.Group, panelSide: 'left' | 'right' = 'left') {
     this.root = root;
+    this.panelSide = panelSide;
     this.vents = [1,2,5,6].map(number=>{
       const node=root.getObjectByName(`Vent_Hinge_${String(number).padStart(2,'0')}`);
       if(!node)throw new Error(`Missing vent ${number}`);
@@ -35,7 +37,29 @@ export class ESSModel {
     const { scene } = await new GLTFLoader().loadAsync(url);
     return new ESSModel(scene);
   }
-  clone(): ESSModel { return new ESSModel(this.root.clone(true)); }
+  clone(panelSide: 'left' | 'right' = this.panelSide): ESSModel {
+    const root = this.root.clone(true);
+    if (panelSide !== this.panelSide) {
+      root.scale.x *= -1;
+      const prints = new Map<THREE.Material, THREE.Material>();
+      root.traverse(node => {
+        if (!(node instanceof THREE.Mesh)) return;
+        const orientPrint = (material: THREE.Material): THREE.Material => {
+          if (!(material instanceof THREE.MeshStandardMaterial) || !material.map) return material;
+          if (!prints.has(material)) {
+            const copy = material.clone();
+            copy.map = material.map.clone();
+            copy.map.repeat.x *= -1;
+            copy.map.offset.x = 1 - copy.map.offset.x;
+            prints.set(material, copy);
+          }
+          return prints.get(material)!;
+        };
+        node.material = Array.isArray(node.material) ? node.material.map(orientPrint) : orientPrint(node.material);
+      });
+    }
+    return new ESSModel(root, panelSide);
+  }
   toggleVents(): boolean {
     const open=this.vents.some(vent=>vent.target.angleTo(this.closed)<.01);
     for(const vent of this.vents)vent.target.setFromAxisAngle(new THREE.Vector3(1,0,0),open?Math.PI/4:0);

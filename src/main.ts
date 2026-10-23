@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ESSModel } from './ESSModel';
-import { arrangeContainers } from './ContainerLayout';
+import { arrangeContainers, LINK_PANEL_SIDES } from './ContainerLayout';
 import { formatRackLabel } from './telemetry';
 import { setupDiagnostics } from './diagnostics';
 import { setupContactorDiagnostics } from './contactorDiagnostics';
@@ -53,7 +53,7 @@ function home(): void {
  camera.position.copy(center).add(new THREE.Vector3(-.9,1.1,1.35).normalize().multiplyScalar(distance));
  controls.target.copy(center);controls.update();
  document.querySelector<HTMLElement>('#rack-markers')!.style.display='none';
- status.textContent='4대(2×2) + 2대 · 쌍 간격 0.5ft · E-panel 바깥 방향';
+ status.textContent='4대(2×2) + 2대 · 좌우·앞뒤 0.5ft · 랙 앞문·E-panel 바깥 방향';
 }
 new ResizeObserver(() => {const {width,height}=viewport.getBoundingClientRect();renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();frameDiagnosis();}).observe(viewport);
 let model: ESSModel | undefined;
@@ -76,7 +76,7 @@ function focusPanelDevice(name:string,label:string):void {
  if(!model)return;showSelectedMarkers();model.setAll(true);
  const node=model.root.getObjectByName(name)!;
  const target=node.getWorldPosition(new THREE.Vector3());
- camera.position.copy(target).add(name==='LCS_Controller' ? new THREE.Vector3(-.45,.07,-.66).applyQuaternion(model.root.quaternion) : new THREE.Vector3(-.35,.12,1.1).applyQuaternion(model.root.quaternion));
+ camera.position.copy(target).add(name==='LCS_Controller' ? new THREE.Vector3(-.45,.07,-.66).multiply(model.root.scale).applyQuaternion(model.root.quaternion) : new THREE.Vector3(-.35,.12,1.1).multiply(model.root.scale).applyQuaternion(model.root.quaternion));
  controls.target.copy(target);controls.update();status.textContent=label;
 }
 for(const [name,label] of [['Extended_Switch','Extended Switch'],['Network_Switch_IE3500','Switch'],['LCS_Controller','LCS']]){
@@ -91,7 +91,7 @@ function selectContainer(index:number):void {
  createRackMarkers();showSelectedMarkers();
  view(new THREE.Vector3(-7.8,5.3,10.2),new THREE.Vector3(.45,1.3,0));
  document.querySelector('#telemetry h2')!.textContent=`ESS ${String(index+1).padStart(2,'0')} 진단 정보`;
- status.textContent=`ESS ${String(index+1).padStart(2,'0')} · 랙 양문 1–2 / 3–4 / 5–6`;
+ status.textContent=`ESS ${String(index+1).padStart(2,'0')} · E-panel ${model.panelSide==='left'?'좌측형':'우측형'} (랙 앞문 기준) · 랙 양문 1–2 / 3–4 / 5–6`;
 }
 document.querySelector('#container-select')!.addEventListener('change',event=>selectContainer(Number((event.target as HTMLSelectElement).value)));
 void setupDiagnostics();
@@ -113,7 +113,7 @@ document.addEventListener('contactorfocus', event => {
  frameDiagnosis();
  if(focus){
   const target=contactorBox.getCenter(new THREE.Vector3());target.y+=.2;
-  const endPosition=target.clone().add(new THREE.Vector3(0,.3,3.6).applyQuaternion(model.root.quaternion));
+  const endPosition=target.clone().add(new THREE.Vector3(0,.3,3.6).multiply(model.root.scale).applyQuaternion(model.root.quaternion));
   if(reducedMotion){camera.position.copy(endPosition);controls.target.copy(target);controls.update();}
   else contactorCamera={position:camera.position.clone(),target:controls.target.clone(),endPosition,endTarget:target,start:performance.now()};
  }
@@ -133,7 +133,7 @@ document.addEventListener('rackfocus', event => {
  const target=box.getCenter(new THREE.Vector3());
  const size=box.getSize(new THREE.Vector3());
  const distance=Math.max(size.y,size.x/camera.aspect)/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.55;
- camera.position.copy(target).add(new THREE.Vector3(0,.15,distance).applyQuaternion(model.root.quaternion));
+ camera.position.copy(target).add(new THREE.Vector3(0,.15,distance).multiply(model.root.scale).applyQuaternion(model.root.quaternion));
  controls.target.copy(target);controls.update();
  status.textContent=`ESS ${models.indexOf(model)+1} · ${formatRackLabel(rackId)} 확대 · 배터리 랙 버튼으로 복귀`;
 });
@@ -153,19 +153,20 @@ on('zoom-in',()=>zoom(.8));on('zoom-out',()=>zoom(1.25));
 on('fullscreen',()=>{if(document.fullscreenElement)void document.exitFullscreen();else void document.documentElement.requestFullscreen().catch(()=>{status.textContent='이 브라우저에서는 전체화면을 사용할 수 없습니다.';});});
 on('racks',()=>{showSelectedMarkers();model?.setAll(true);view(new THREE.Vector3(2.5,3.8,9.5),new THREE.Vector3(0,1.35,0));status.textContent='랙 6개 · 각 7팩';});
 on('panel',()=>{showSelectedMarkers();model?.setAll(true);view(new THREE.Vector3(-6.4,1.8,.3),new THREE.Vector3(-2.5,1.12,.3));status.textContent='내부 장비와 문 안쪽 FACP';});
-on('ebsc',()=>{if(!model)return;showSelectedMarkers();model.setAll(true);const node=model.root.getObjectByName('eBSC_Controller')!;const target=node.getWorldPosition(new THREE.Vector3());camera.position.copy(target).add(new THREE.Vector3(-.3,.06,1.1).applyQuaternion(model.root.quaternion));controls.target.copy(target);controls.update();status.textContent='eBSC · LAN 포트 4개';});
+on('ebsc',()=>{if(!model)return;showSelectedMarkers();model.setAll(true);const node=model.root.getObjectByName('eBSC_Controller')!;const target=node.getWorldPosition(new THREE.Vector3());camera.position.copy(target).add(new THREE.Vector3(-.3,.06,1.1).multiply(model.root.scale).applyQuaternion(model.root.quaternion));controls.target.copy(target);controls.update();status.textContent='eBSC · LAN 포트 4개';});
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let previous=performance.now();renderer.setAnimationLoop(time=>{const dt=(time-previous)/1000;previous=time;models.forEach(item=>item.update(dt));if(contactorCamera){const t=Math.min(1,(time-contactorCamera.start)/650),e=t*t*(3-2*t);camera.position.lerpVectors(contactorCamera.position,contactorCamera.endPosition,e);controls.target.lerpVectors(contactorCamera.target,contactorCamera.endTarget,e);if(t===1)contactorCamera=undefined;}controls.update();contactorHighlightMaterial.opacity=contactorMarker.dataset.diagnosis==='mismatch'&&!reducedMotion ? .7+Math.sin(time*.004)*.2 : .8;renderer.render(scene,camera);const {width,height}=viewport.getBoundingClientRect();for(const marker of [...sceneMarkers,...containerMarkers,...(contactorAnchor?[{element:contactorMarker,anchor:contactorAnchor}]:[])]){const point=marker.anchor.clone().project(camera);marker.element.hidden=point.z < -1 || point.z > 1;const x=(point.x*.5+.5)*width,y=(-point.y*.5+.5)*height;marker.element.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%)`;if(marker.element===contactorMarker)contactorUi.position(x,y);}});
 async function loadModel():Promise<void>{
 try {
  model=await ESSModel.load('./models/ess-container.glb');
  for(let index=0;index<6;index++){
-  const instance=index===0?model:model.clone();
+  const instance=index===0?model:model.clone(LINK_PANEL_SIDES[index]);
   instance.root.name=`ESS_${index+1}`;models.push(instance);scene.add(instance.root);
  }
  layoutBounds=arrangeContainers(models.map(instance=>instance.root));
  models.forEach((instance,index)=>{
-  const element=document.createElement('button');element.className='container-marker';element.textContent=`ESS ${String(index+1).padStart(2,'0')}`;
+  const element=document.createElement('button');element.className='container-marker';element.textContent=`ESS ${String(index+1).padStart(2,'0')} · E-panel ${instance.panelSide==='left'?'L':'R'}`;
+  document.querySelector<HTMLSelectElement>('#container-select')!.options[index].textContent=`ESS ${String(index+1).padStart(2,'0')} · E-panel ${instance.panelSide==='left'?'좌측형':'우측형'}`;
   element.addEventListener('click',()=>selectContainer(index));document.querySelector('#container-markers')!.append(element);
   const center=new THREE.Box3().setFromObject(instance.root).getCenter(new THREE.Vector3());center.y=3.5;
   containerMarkers.push({element,anchor:center});

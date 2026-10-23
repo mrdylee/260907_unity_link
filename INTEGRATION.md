@@ -6,6 +6,8 @@
 
 현재 프로젝트는 TypeScript + Three.js 웹 앱입니다. 독립적인 npm SDK나 React 컴포넌트는 아닙니다. 현재 구현과 아래 권장 통합 계약을 구분해 사용하세요.
 
+**형상과 배치를 C# 또는 프런트엔드에서 재현할 때는 [LINK 화면 재현 가이드](docs/LINK_RENDERING_GUIDE.md)를 함께 읽으세요.** 좌우형, 0.5ft 간격 계산, Unity 좌표 변환과 진단 말풍선 앵커를 설명합니다.
+
 ## 1. 가장 적은 수정으로 포함하기
 
 `npm run build`로 생성한 `dist/` 전체를 대상 웹 서버의 한 경로에 배포합니다. `index.html`만 복사하면 안 됩니다. `assets/`와 `models/`를 함께 유지해야 합니다.
@@ -69,7 +71,7 @@ interface TelemetryProvider {
 
 ## 5. 선택 이벤트와 갱신 동작
 
-3D 모델의 공개 메서드는 `ESSModel.load(url)`, `clone()`, `setDoor(name, open)`, `setAll(open)`, `toggleObject(object)`, `update(deltaSeconds)`, `dispose()`입니다. `setDoor`는 문 하나를 지정하고, `toggleObject`는 클릭된 랙 문과 짝을 함께 조작합니다. 애니메이션은 매 프레임 `update` 호출이 필요합니다. 복제 모델은 형상·재질을 공유하므로 한 복제본의 `dispose()`가 공유 자원까지 해제할 수 있습니다. 복제본별 제거와 공유 GPU 자원 최종 해제를 분리하는 작업은 이식 시 필요합니다.
+3D 모델의 공개 메서드는 `ESSModel.load(url)`, `clone(panelSide?)`, `setDoor(name, open)`, `setAll(open)`, `toggleObject(object)`, `update(deltaSeconds)`, `dispose()`입니다. `clone`의 선택 인자는 `'left'` 또는 `'right'`이며 생략하면 현재 타입을 유지합니다. `setDoor`는 문 하나를 지정하고, `toggleObject`는 클릭된 랙 문과 짝을 함께 조작합니다. 애니메이션은 매 프레임 `update` 호출이 필요합니다. 복제 모델은 형상·일부 재질을 공유하므로 한 복제본의 `dispose()`가 공유 자원까지 해제할 수 있습니다. 복제본별 제거와 공유 GPU 자원 최종 해제를 분리하는 작업은 이식 시 필요합니다.
 
 | 현재 연결 지점 | 동작 |
 |---|---|

@@ -39,11 +39,11 @@
     },
     {
       "name": "Front_Left_Hinge",
-      "openDegrees": 100
+      "openDegrees": 90
     },
     {
       "name": "Front_Right_Hinge",
-      "openDegrees": -100
+      "openDegrees": -90
     }
   ],
   "modelVersion": "Blender paired doors / six-container viewer",

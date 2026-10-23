@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { OBB } from 'three/addons/math/OBB.js';
 import { ESSModel } from '../src/ESSModel.ts';
-import { arrangeContainers } from '../src/ContainerLayout.ts';
+import { arrangeContainers, LINK_PANEL_SIDES } from '../src/ContainerLayout.ts';
 // Decode embedded glTF images in Node; rendering is verified separately in the browser.
 const { createCanvas, loadImage } = await import('@napi-rs/canvas');
 globalThis.self = globalThis;
@@ -309,7 +309,25 @@ const moved=copies[0];moved.root.position.set(8.5,0,-7);moved.root.rotation.y=.3
 moved.setAll(true);settle(moved);
 for(const copy of copies.slice(1))assert.ok(copy.root.getObjectByName('Door_Hinge_02').quaternion.angleTo(new THREE.Quaternion())<1e-5,'Contact state is independent per container');
 console.log('PASS: adjacent 2/3 and 4/5 mesh separation, either opening order and paired clicks, shared opening, independent closing, explicit reopening, reversal, large frames, vents and transformed clone.');
-const site=Array.from({length:6},()=>model.clone());
+const rightType=model.clone('right');
+const panelX=instance=>instance.root.getObjectByName('E_Panel_Detailed').getWorldPosition(new THREE.Vector3()).x;
+assert.ok(panelX(model)<0 && panelX(rightType)>0,'L/R types place the E-panel on opposite sides without rotating the rack front');
+assert.ok(rightType.root.quaternion.angleTo(model.root.quaternion)<1e-6,'Changing type leaves rack front direction unchanged');
+for(const name of ['eBSC_Face_Print','IE3500_Face_Print','LCS_Face_Print','BPU_01_Face_Print']){
+ const left=model.root.getObjectByName(name),right=rightType.root.getObjectByName(name);
+ assert.equal(left.geometry,right.geometry,'Both types reuse the original geometry');
+ assert.notEqual(left.material,right.material,'Mirrored print material is isolated from the original');
+ assert.equal(left.material.map.repeat.x,1,'Left type print is not modified');
+ assert.equal(right.material.map.repeat.x,-1,'Right type reverses print U to keep lettering readable');
+ assert.equal(right.material.map.offset.x,1);
+}
+const restored=rightType.clone('left');
+assert.ok(Math.abs(panelX(restored)-panelX(model))<1e-6,'Switching back restores the left E-panel');
+assert.equal(restored.root.getObjectByName('LCS_Face_Print').material.map.repeat.x,1,'Switching back restores print orientation');
+assert.ok(Math.abs(panelX(rightType.clone())-panelX(rightType))<1e-6,'Cloning a right type without changing type preserves its side');
+const types=['left','right','right','left','left','right'];
+assert.deepEqual(LINK_PANEL_SIDES,types,'Viewer instantiates the L/R/R/L/L/R types used by the layout');
+const site=types.map(type=>model.clone(type));
 arrangeContainers(site.map(instance=>instance.root));
 const closedBodies=site.map(instance=>new THREE.Box3().setFromObject(instance.root));
 for(const first of [0,2,4]){
@@ -322,14 +340,28 @@ for(const first of [0,2,4]){
   assert.ok(index%2 ? panel.x>body.max.x-.6 : panel.x<body.min.x+.6,'E-panel faces the outside of the pair');
  }
 }
-assert.ok(Math.abs(closedBodies[2].min.z-closedBodies[0].max.z-2)<1e-6,'Four-unit group keeps the provisional 2m service passage');
-assert.ok(Math.abs(closedBodies[4].min.z-closedBodies[2].max.z-4)<1e-6,'Separate two-unit group has a wider 4m passage');
+for(const column of [0,1]){
+ assert.ok(Math.abs(closedBodies[column].min.z-closedBodies[column+2].max.z-.1524)<1e-6,'Back-to-back LINK outer surfaces have a 0.5ft clear gap');
+ assert.ok(Math.abs(closedBodies[column].min.x-closedBodies[column+2].min.x)<1e-6,'Both rows align to the same columns');
+}
+for(const [index,instance] of site.entries()){
+ const front=new THREE.Vector3(0,0,1).transformDirection(instance.root.matrixWorld);
+ assert.ok(index===2||index===3 ? front.z<-.999 : front.z>.999,'Rack fronts of both rows face away from the four-unit group');
+}
+assert.ok(Math.abs(closedBodies[4].min.z-closedBodies[0].max.z-4)<1e-6,'Separate two-unit group has a wider 4m passage');
 site.forEach(instance=>instance.setAll(true));
 for(let frame=0;frame<110;frame++){
  site.forEach(instance=>instance.update(1/60));
+ site.forEach(instance=>assertNoDoorOverlap(instance));
  const bodies=site.map(instance=>new THREE.Box3().setFromObject(instance.root));
  for(let i=0;i<6;i++)for(let j=i+1;j<6;j++)assert.ok(!bodies[i].intersectsBox(bodies[j]),`LINK ${i+1}/${j+1} must not intersect while E-panel and rack doors open`);
 }
-console.log('PASS: 4+2 LINK grouping, 0.5ft paired gaps, outward E-panels and independent full-door clearance.');
+for(const instance of site){
+ for(const name of ['Front_Left_Hinge','Front_Right_Hinge'])assert.ok(Math.abs(instance.root.getObjectByName(name).quaternion.angleTo(new THREE.Quaternion())-Math.PI/2)<1e-6,'Service doors reach 90 degrees without overtravel into the back-to-back neighbor');
+ instance.setAll(false);
+}
+for(let frame=0;frame<110;frame++)site.forEach(instance=>{instance.update(1/60);assertNoDoorOverlap(instance);});
+for(const instance of site)for(const name of ['Door_Hinge_01','Door_Hinge_02','Front_Left_Hinge','Front_Right_Hinge'])assert.ok(instance.root.getObjectByName(name).quaternion.angleTo(new THREE.Quaternion())<1e-6,'Mirrored and rotated LINK doors close normally');
+console.log('PASS: L/R LINK types, readable isolated print maps, outward rack fronts, 0.5ft gaps on both axes, outward E-panels and independent full-door clearance.');
 model.dispose();
 console.log('PASS: 6 racks / 42 packs / 8 door hierarchy, opening and closing, three outward door pairs, six independent containers, FACP follows hinge, racks stationary.');
